@@ -10,11 +10,11 @@
 - `PROGRESS.md` — 구현 진행 현황 (`/loop` 엔지니어링 루프가 매 반복마다 읽고 갱신)
 - `docs/LOOP_PROMPT.md` — `/loop`에 붙여넣는 메타 프롬프트
 
-## 기술 스택 (예정)
+## 기술 스택
 
-- 서버: Node.js + Express + SQLite(better-sqlite3)
-- 클라이언트: React + Vite
-- 상세 스캐폴딩은 `PROGRESS.md`의 T0 항목에서 진행
+- 서버: Node.js + Express + SQLite(better-sqlite3) — REST API, `server/test/`에 vitest 테스트 135건
+- 클라이언트: React + Vite + React Router — 대시보드/주문/매핑대기함/출고지시서/거래명세서/거래처/제품/사용자/설정/감사로그 화면
+- 인증: 별도 로그인 없이 `X-User-Id` 헤더로 신원 식별하는 경량 방식(우측 상단 계정 선택). 명세서 발행·ERP 전송은 운영자(OPERATOR) 이상 필요, 마스터 동기화·승인 임계값 설정은 관리자(ADMIN) 전용
 
 ## 실행 방법
 
@@ -24,9 +24,10 @@ npm run dev                # 서버(4000) + 클라이언트(5173) 동시 기동
 npm test                    # 서버 테스트 (vitest)
 ```
 
-- 서버 헬스체크: `curl http://localhost:4000/api/health`
+- 브라우저에서 http://localhost:5173 접속 (서버 헬스체크는 `curl http://localhost:4000/api/health`)
 - 클라이언트 개발 서버는 `/api/*` 요청을 `vite.config.js`의 프록시 설정을 통해 서버(4000)로 전달한다.
 - SQLite 파일은 `server/data.sqlite3`에 생성되며(WAL 모드) git에는 포함하지 않는다.
+- 최초 사용 시 화면 상단 "접속 계정"에서 사용할 사용자가 없으므로, 사용자 관리 화면(`/users`)에서 관리자(ADMIN) 계정을 먼저 만든다. 그 다음 거래처/제품 마스터를 등록하고 주문 업로드부터 시작한다.
 
 ## 진행 방식
 

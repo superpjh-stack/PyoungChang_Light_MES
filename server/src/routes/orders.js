@@ -124,7 +124,7 @@ export function ordersRouter(db) {
   // R1-F-05 세부내용 3) 검증 실패 건은 확정 불가
   router.post('/:orderNo/confirm', (req, res, next) => {
     try {
-      res.json(confirmOrder(db, req.params.orderNo));
+      res.json(confirmOrder(db, req.params.orderNo, { changed_by: req.user?.user_id }));
     } catch (err) {
       next(err);
     }
