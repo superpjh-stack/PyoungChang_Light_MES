@@ -15,13 +15,14 @@
 > 실제 샘플이 도착하면 컬럼 매핑만 교체할 수 있도록 **템플릿 정의를 코드에서 한 곳(설정/스키마)으로 분리**해야 한다.
 > 이 가정 위에서 만든 부분은 반드시 코드 주석이 아니라 이 PROGRESS.md의 "확인 필요" 절에 기록한다.
 
-## T0. 프로젝트 스캐폴딩
+## T0. 프로젝트 스캐폴딩 [x]
 
-- [ ] Node.js + Express(서버) + React/Vite(클라이언트) + SQLite(better-sqlite3) 모노레포 구조 생성 (`server/`, `client/`)
-- [ ] `npm run dev`로 서버+클라이언트 동시 구동, `npm test`로 서버 테스트 실행 가능
-- [ ] SQLite 파일은 `.gitignore` 처리, 스키마는 `server/db/schema.sql`(또는 마이그레이션 파일)로 버전 관리
-- [ ] README.md에 실행 방법 기록
+- [x] Node.js + Express(서버) + React/Vite(클라이언트) + SQLite(better-sqlite3) 모노레포 구조 생성 (`server/`, `client/`)
+- [x] `npm run dev`로 서버+클라이언트 동시 구동, `npm test`로 서버 테스트 실행 가능
+- [x] SQLite 파일은 `.gitignore` 처리, 스키마는 `server/db/schema.sql`(또는 마이그레이션 파일)로 버전 관리
+- [x] README.md에 실행 방법 기록
 - 완료 기준: `npm install && npm run dev` 실행 시 서버·클라이언트가 각각 기동되고 헬스체크(`/api/health`)가 200 응답
+- 검증 방법: `npm test`(vitest, health 테스트 통과) + 서버 기동 후 `curl localhost:4000/api/health` → `{"status":"ok"}` + 클라이언트(5173)에서 프록시로 동일 응답 확인. npm 네이티브 모듈(better-sqlite3, esbuild, fsevents) install script는 `npm approve-scripts`로 승인 필요(`package.json`의 `allowScripts`에 기록됨).
 
 ## T1. 데이터 모델 (R1-D-01~04, 기획서 6.2)
 
@@ -86,3 +87,5 @@
 ## 완료 로그
 
 > 루프가 작업을 완료할 때마다 한 줄씩 추가: `날짜 | 요구사항ID | 요약 | 커밋 해시`
+
+- 2026-09-30 | T0 | Node/Express/SQLite 서버 + React/Vite 클라이언트 모노레포 스캐폴딩, 헬스체크 동작 확인 | (다음 커밋에서 해시 반영)

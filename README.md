@@ -18,7 +18,15 @@
 
 ## 실행 방법
 
-> 프로젝트 스캐폴딩(T0) 완료 후 이 절이 채워진다.
+```bash
+npm install                # 최초 1회 (workspaces: server, client)
+npm run dev                # 서버(4000) + 클라이언트(5173) 동시 기동
+npm test                    # 서버 테스트 (vitest)
+```
+
+- 서버 헬스체크: `curl http://localhost:4000/api/health`
+- 클라이언트 개발 서버는 `/api/*` 요청을 `vite.config.js`의 프록시 설정을 통해 서버(4000)로 전달한다.
+- SQLite 파일은 `server/data.sqlite3`에 생성되며(WAL 모드) git에는 포함하지 않는다.
 
 ## 진행 방식
 
