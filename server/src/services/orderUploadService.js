@@ -1,6 +1,7 @@
 import { ORDER_UPLOAD_COLUMNS } from '../lib/orderUploadTemplate.js';
 import { parseOrderUploadWorkbook } from '../lib/orderUploadXlsx.js';
 import * as orderRepo from '../repositories/orderRepository.js';
+import { matchProductName } from './productMatchingService.js';
 
 const COLUMN_BY_KEY = Object.fromEntries(ORDER_UPLOAD_COLUMNS.map((c) => [c.key, c]));
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -134,13 +135,18 @@ export function commitOrderUpload(db, validRows) {
           ship_method: first.ship_method,
           customer_order_no: first.customer_order_no,
           note: first.note,
-          lines: groupRows.map((r) => ({
-            raw_product_name: r.values.raw_product_name,
-            spec: r.values.spec,
-            quantity: Number(r.values.quantity),
-            unit: r.values.unit,
-            unit_price: r.values.unit_price != null ? Number(r.values.unit_price) : null,
-          })),
+          // R1-F-03 2단계 자동 검증·매핑: 정확/정규화 일치 건은 즉시 표준코드로 변환, 그 외는 매핑 대기함으로
+          lines: groupRows.map((r) => {
+            const match = matchProductName(db, customer.customer_code, r.values.raw_product_name);
+            return {
+              raw_product_name: r.values.raw_product_name,
+              product_code: ['EXACT', 'NORMALIZED'].includes(match.matchType) ? match.product_code : null,
+              spec: r.values.spec,
+              quantity: Number(r.values.quantity),
+              unit: r.values.unit,
+              unit_price: r.values.unit_price != null ? Number(r.values.unit_price) : null,
+            };
+          }),
         });
       });
 

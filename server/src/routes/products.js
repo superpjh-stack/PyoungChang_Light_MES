@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as productRepo from '../repositories/productRepository.js';
 import * as aliasRepo from '../repositories/productAliasRepository.js';
+import { matchProductName } from '../services/productMatchingService.js';
 
 export function productsRouter(db) {
   const router = Router();
@@ -65,6 +66,15 @@ export function productAliasesRouter(db) {
     } catch (err) {
       next(err);
     }
+  });
+
+  // 3단계 매핑 엔진을 직접 호출해 결과만 확인 (수동 확인용 / 향후 화면 연동용)
+  router.get('/match', (req, res) => {
+    const { customer_code, raw_name } = req.query;
+    if (!customer_code || !raw_name) {
+      return res.status(400).json({ error: 'customer_code, raw_name 쿼리 파라미터가 필요합니다' });
+    }
+    res.json(matchProductName(db, customer_code, raw_name));
   });
 
   router.post('/:id/use', (req, res, next) => {
