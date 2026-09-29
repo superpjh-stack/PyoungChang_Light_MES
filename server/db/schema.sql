@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS product (
   unit            TEXT NOT NULL DEFAULT 'EA',
   tax_type        TEXT NOT NULL DEFAULT 'TAXABLE' CHECK (tax_type IN ('TAXABLE', 'EXEMPT')),
   erp_item_code   TEXT,
+  pack_unit       TEXT,                 -- 포장 단위 (예: BOX) — R1-F-06 포장단위 환산용, 미설정 시 환산하지 않음
+  pack_size       NUMERIC,              -- 1 pack_unit = pack_size * unit (예: 1BOX = 10(kg))
   created_at      TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -141,9 +143,22 @@ CREATE TABLE IF NOT EXISTS ship_order_dtl (
   product_code      TEXT NOT NULL REFERENCES product(product_code),
   instructed_qty    NUMERIC NOT NULL,     -- 합산 수량 (원 단위, 예: kg)
   packed_qty        NUMERIC,              -- 포장 단위 환산 수량 (예: 박스)
-  pack_unit         TEXT
+  pack_unit         TEXT,
+  note              TEXT                  -- 생성 후 현장 확인 비고 (R1-F-06 세부4 수정 가능 항목)
 );
 CREATE INDEX IF NOT EXISTS idx_ship_order_dtl_order ON ship_order_dtl(ship_order_no);
+
+-- 출고지시상세 생성 후 수량/비고 수정 이력 (R1-F-06 세부4 "수정 이력 보관")
+CREATE TABLE IF NOT EXISTS ship_order_dtl_revision (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  ship_order_dtl_id INTEGER NOT NULL REFERENCES ship_order_dtl(ship_order_dtl_id) ON DELETE CASCADE,
+  field             TEXT NOT NULL,
+  old_value         TEXT,
+  new_value         TEXT,
+  changed_by        TEXT,
+  changed_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_ship_order_dtl_revision_dtl ON ship_order_dtl_revision(ship_order_dtl_id);
 
 -- 출고지시상세 ↔ 원 주문라인 역참조 (N:M 합산 근거 보관, 기획서 6.2 "원 주문번호 목록 보관")
 CREATE TABLE IF NOT EXISTS ship_order_src (
