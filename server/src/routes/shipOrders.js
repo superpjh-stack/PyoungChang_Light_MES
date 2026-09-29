@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as shipOrderRepo from '../repositories/shipOrderRepository.js';
+import * as shipResultRepo from '../repositories/shipResultRepository.js';
 import { buildShipOrderExportWorkbook } from '../lib/shipOrderExportXlsx.js';
 
 export function shipOrdersRouter(db) {
@@ -56,6 +57,28 @@ export function shipOrdersRouter(db) {
 
   router.get('/lines/:lineId/revisions', (req, res) => {
     res.json(shipOrderRepo.getShipOrderDtlRevisions(db, Number(req.params.lineId)));
+  });
+
+  // R1-F-07: 출고 실적 등록 (지시수량 대비 실출고 차이 시 사유 필요)
+  router.post('/lines/:lineId/results', (req, res, next) => {
+    try {
+      const { actual_qty, pack_lot, diff_reason_code, registered_by } = req.body ?? {};
+      const results = shipResultRepo.registerShipResult(db, {
+        ship_order_dtl_id: Number(req.params.lineId),
+        actual_qty,
+        pack_lot,
+        diff_reason_code,
+        registered_by,
+      });
+      res.status(201).json(results);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // R1-F-07 완료 기준: 지시 수량과 실출고 수량 차이를 조회 화면에서 확인
+  router.get('/:shipOrderNo/results', (req, res) => {
+    res.json(shipResultRepo.getShipResultSummary(db, req.params.shipOrderNo));
   });
 
   // eslint-disable-next-line no-unused-vars
