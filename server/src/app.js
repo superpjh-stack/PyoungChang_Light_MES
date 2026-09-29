@@ -10,7 +10,8 @@ import { invoicesRouter } from './routes/invoices.js';
 export function createApp(db) {
   const app = express();
   app.use(cors());
-  app.use(express.json());
+  // 기본 100kb 제한으로는 1,000행 규모의 주문 업로드 커밋 요청(R1-N-01)이 잘릴 수 있어 상향
+  app.use(express.json({ limit: '20mb' }));
 
   app.get('/api/health', (req, res) => {
     db.prepare('SELECT 1').get();
