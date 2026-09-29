@@ -4,6 +4,7 @@ import { buildOrderUploadTemplateWorkbook } from '../lib/orderUploadXlsx.js';
 import { buildOrdersExportWorkbook } from '../lib/orderExportXlsx.js';
 import { previewOrderUpload, commitOrderUpload } from '../services/orderUploadService.js';
 import { validateOrderForConfirm, confirmOrder } from '../services/orderValidationService.js';
+import { traceOrder, listPendingShipment, listPendingInvoice } from '../services/traceService.js';
 import * as orderRepo from '../repositories/orderRepository.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -63,6 +64,15 @@ export function ordersRouter(db) {
     }
   });
 
+  // R1-F-10 세부3) 미출고/미발행 주문 목록 (/:orderNo 보다 먼저 등록해야 경로가 파라미터로 잡히지 않음)
+  router.get('/pending-shipment', (req, res) => {
+    res.json(listPendingShipment(db));
+  });
+
+  router.get('/pending-invoice', (req, res) => {
+    res.json(listPendingInvoice(db));
+  });
+
   router.get('/:orderNo', (req, res) => {
     const order = orderRepo.getOrderWithLines(db, req.params.orderNo);
     if (!order) return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
@@ -83,6 +93,15 @@ export function ordersRouter(db) {
   // R1-F-02 완료 기준: 주문 등록 후 상태 변경 이력을 화면에서 확인
   router.get('/:orderNo/status-history', (req, res) => {
     res.json(orderRepo.getStatusHistory(db, req.params.orderNo));
+  });
+
+  // R1-F-10 세부1) 주문번호 기준 하위 문서 트리 조회
+  router.get('/:orderNo/trace', (req, res, next) => {
+    try {
+      res.json(traceOrder(db, req.params.orderNo));
+    } catch (err) {
+      next(err);
+    }
   });
 
   // R1-F-05: 확정 전 정합성 검증 (행 단위 오류/경고)

@@ -138,7 +138,10 @@
   - `getShipResultSummary`: 지시수량 대비 실적 합계·차이(diffQty)를 라인 단위로 반환 (완료 기준)
   - 라우트: `POST /api/ship-orders/lines/:lineId/results`, `GET /api/ship-orders/:shipOrderNo/results`
   - 테스트 5건(정상 전이, 차이 시 사유 필수, 차이 표시 수용 기준, 제품 2종 주문은 두 라인 모두 등록돼야 전이, 404) + 실서버 curl로 부족 수량(SHORTAGE) 등록→차이 표시→SHIPPED 전이 확인
-- [ ] **R1-F-10 문서 간 연계 이력 추적** — 주문번호 기준 하위 문서 트리 조회, 명세서 기준 역추적, 미출고/미발행 목록
+- [x] **R1-F-10 문서 간 연계 이력 추적** — 주문번호 기준 하위 문서 트리 조회, 명세서 기준 역추적, 미출고/미발행 목록
+  - `services/traceService.js`: `traceOrder`(주문→출고지시서(들)→거래명세서(들) 트리) / `traceInvoice`(명세서→원주문→출고지시서 역추적) / `listPendingShipment`(CONFIRMED·SHIP_ORDERED) / `listPendingInvoice`(SHIPPED)
+  - 라우트: `GET /api/orders/:orderNo/trace`, `GET /api/invoices/:invoiceNo/trace`, `GET /api/orders/pending-shipment`, `GET /api/orders/pending-invoice`
+  - 테스트 5건(3문서 연결 조회 수용 기준, 역추적, 미출고 목록, 미발행 목록, 404) + 실서버 curl로 전체 파이프라인 후 trace/역추적/미발행목록 확인
 - [ ] **R1-F-11 주문·출고 현황 대시보드** — 당일/주간 건수·수량, 출고지연 강조, 매핑대기/검증실패 건수
 - [ ] **R1-N-06 RBAC** — 관리자/운영자/조회자, 명세서 발행·ERP 전송은 운영자 이상
 - [ ] **R1-N-07 감사 로그** — 주문 수정/매핑 변경/ERP 전송에 사용자·일시 기록
@@ -189,3 +192,4 @@
 - 2026-09-30 | R1-N-01 | 1000건 업로드 성능측정(150ms) + express.json 바디크기 제한 버그 수정 | fec4c00
 - 2026-09-30 | R1-N-02 | 400건 기준 출고지시서(6ms)·거래명세서(17ms) 생성 성능측정 | f27deb9
 - 2026-09-30 | — | **"상" 우선순위(1차 범위) 전체 완료**: 기능 9개 + 인터페이스 5개 + 비기능 4개 | f27deb9
+- 2026-09-30 | R1-F-10 | 문서 간 연계 이력 추적(트리조회/역추적/미출고·미발행 목록) | (다음 커밋에서 해시 반영)

@@ -3,6 +3,7 @@ import * as invoiceRepo from '../repositories/invoiceRepository.js';
 import { previewInvoices, generateInvoices, issueInvoiceWithValidation, validateInvoiceConsistency } from '../services/invoiceService.js';
 import { sendToErp, confirmErpResult, retryErpTransmission, sendBatch } from '../services/erpTransmissionService.js';
 import { fileImportAdapter } from '../services/erpAdapters/fileImportAdapter.js';
+import { traceInvoice } from '../services/traceService.js';
 import { buildInvoiceExportWorkbook } from '../lib/invoiceExportXlsx.js';
 
 export function invoicesRouter(db) {
@@ -43,6 +44,15 @@ export function invoicesRouter(db) {
   router.post('/:invoiceNo/issue', (req, res, next) => {
     try {
       res.json(issueInvoiceWithValidation(db, req.params.invoiceNo));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // R1-F-10 세부2) 거래 명세서 기준 원 주문 역추적
+  router.get('/:invoiceNo/trace', (req, res, next) => {
+    try {
+      res.json(traceInvoice(db, req.params.invoiceNo));
     } catch (err) {
       next(err);
     }
