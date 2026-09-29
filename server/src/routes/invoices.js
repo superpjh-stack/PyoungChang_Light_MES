@@ -7,6 +7,7 @@ import { traceInvoice } from '../services/traceService.js';
 import { buildInvoiceExportWorkbook } from '../lib/invoiceExportXlsx.js';
 import { requireRole } from '../middleware/auth.js';
 import { recordAuditLog } from '../repositories/auditLogRepository.js';
+import { approveInvoice, getApprovalStatus } from '../services/approvalService.js';
 
 export function invoicesRouter(db) {
   const router = Router();
@@ -63,6 +64,31 @@ export function invoicesRouter(db) {
   router.get('/:invoiceNo/trace', (req, res, next) => {
     try {
       res.json(traceInvoice(db, req.params.invoiceNo));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // R1-F-12: 승인 필요 여부·이력 조회
+  router.get('/:invoiceNo/approval', (req, res, next) => {
+    try {
+      res.json(getApprovalStatus(db, req.params.invoiceNo));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // R1-F-12 세부2) 승인 처리 (운영자 이상). 미승인 시 이후 ERP 전송이 차단됨
+  router.post('/:invoiceNo/approve', requireRole('OPERATOR'), (req, res, next) => {
+    try {
+      const result = approveInvoice(db, req.params.invoiceNo, { user_id: req.user.user_id });
+      recordAuditLog(db, {
+        entity_type: 'INVOICE',
+        entity_id: req.params.invoiceNo,
+        action: 'INVOICE_APPROVE',
+        user_id: req.user.user_id,
+      });
+      res.json(result);
     } catch (err) {
       next(err);
     }

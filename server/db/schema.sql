@@ -34,8 +34,15 @@ CREATE TABLE IF NOT EXISTS customer (
   contact_name    TEXT,
   contact_phone   TEXT,
   erp_customer_code TEXT,              -- R1-F-04 ERP 거래처 코드 매핑 (누락 식별 대상)
+  approval_required INTEGER NOT NULL DEFAULT 0 CHECK (approval_required IN (0, 1)), -- R1-F-12 거래처별 승인 필요 여부
   created_at      TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- 시스템 설정 (R1-F-12: 금액 기준 승인 임계값 등 소수의 전역 설정값 저장)
+CREATE TABLE IF NOT EXISTS system_setting (
+  key   TEXT PRIMARY KEY,
+  value TEXT
 );
 
 -- 납품처 (거래처 1:N)
@@ -242,3 +249,12 @@ CREATE TABLE IF NOT EXISTS invoice_dtl (
 );
 CREATE INDEX IF NOT EXISTS idx_invoice_dtl_invoice ON invoice_dtl(invoice_no);
 CREATE INDEX IF NOT EXISTS idx_invoice_dtl_order ON invoice_dtl(order_no);
+
+-- 거래 명세서 승인 이력 (R1-F-12 세부2)
+CREATE TABLE IF NOT EXISTS invoice_approval_log (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  invoice_no  TEXT NOT NULL REFERENCES invoice_hdr(invoice_no) ON DELETE CASCADE,
+  user_id     TEXT,
+  approved_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_invoice_approval_log_invoice ON invoice_approval_log(invoice_no);

@@ -1,4 +1,7 @@
-export function createCustomer(db, { customer_code, name, biz_reg_no, contact_name, contact_phone, erp_customer_code }) {
+export function createCustomer(
+  db,
+  { customer_code, name, biz_reg_no, contact_name, contact_phone, erp_customer_code, approval_required }
+) {
   if (!customer_code || !name) {
     const err = new Error('customer_code, name은 필수입니다');
     err.status = 400;
@@ -11,9 +14,17 @@ export function createCustomer(db, { customer_code, name, biz_reg_no, contact_na
     throw err;
   }
   db.prepare(
-    `INSERT INTO customer (customer_code, name, biz_reg_no, contact_name, contact_phone, erp_customer_code)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).run(customer_code, name, biz_reg_no ?? null, contact_name ?? null, contact_phone ?? null, erp_customer_code ?? null);
+    `INSERT INTO customer (customer_code, name, biz_reg_no, contact_name, contact_phone, erp_customer_code, approval_required)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    customer_code,
+    name,
+    biz_reg_no ?? null,
+    contact_name ?? null,
+    contact_phone ?? null,
+    erp_customer_code ?? null,
+    approval_required ? 1 : 0
+  );
   return getCustomer(db, customer_code);
 }
 
@@ -40,13 +51,13 @@ export function updateCustomer(db, customerCode, patch) {
   const existing = db.prepare('SELECT * FROM customer WHERE customer_code = ?').get(customerCode);
   if (!existing) return null;
 
-  const fields = ['name', 'biz_reg_no', 'contact_name', 'contact_phone', 'erp_customer_code'];
+  const fields = ['name', 'biz_reg_no', 'contact_name', 'contact_phone', 'erp_customer_code', 'approval_required'];
   const updates = [];
   const params = [];
   for (const field of fields) {
     if (Object.prototype.hasOwnProperty.call(patch, field)) {
       updates.push(`${field} = ?`);
-      params.push(patch[field]);
+      params.push(field === 'approval_required' ? (patch[field] ? 1 : 0) : patch[field]);
     }
   }
   if (updates.length === 0) return getCustomer(db, customerCode);

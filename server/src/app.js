@@ -9,6 +9,7 @@ import { invoicesRouter } from './routes/invoices.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { usersRouter } from './routes/users.js';
 import { auditLogRouter } from './routes/auditLog.js';
+import { settingsRouter } from './routes/settings.js';
 import { identifyUser } from './middleware/auth.js';
 
 export function createApp(db) {
@@ -33,6 +34,7 @@ export function createApp(db) {
   app.use('/api/dashboard', dashboardRouter(db));
   app.use('/api/users', usersRouter(db));
   app.use('/api/audit-log', auditLogRouter(db));
+  app.use('/api/settings', settingsRouter(db));
 
   return app;
 }

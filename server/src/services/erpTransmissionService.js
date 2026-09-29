@@ -1,5 +1,6 @@
 import { getInvoiceWithLines } from '../repositories/invoiceRepository.js';
 import { fileImportAdapter } from './erpAdapters/fileImportAdapter.js';
+import { assertErpSendAllowed } from './approvalService.js';
 
 const ACTIVE_ADAPTER = fileImportAdapter; // 방안 A(API)/B(DB View) 확정 시 이 한 줄만 교체
 
@@ -26,6 +27,7 @@ export function sendToErp(db, invoiceNo) {
     err.status = 409;
     throw err;
   }
+  assertErpSendAllowed(db, invoice); // R1-F-12: 승인 미완료 명세서는 ERP 전송 차단
 
   const transmission = ACTIVE_ADAPTER.prepareTransmission(db, invoice);
   db.prepare(
