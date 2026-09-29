@@ -24,14 +24,16 @@
 - 완료 기준: `npm install && npm run dev` 실행 시 서버·클라이언트가 각각 기동되고 헬스체크(`/api/health`)가 200 응답
 - 검증 방법: `npm test`(vitest, health 테스트 통과) + 서버 기동 후 `curl localhost:4000/api/health` → `{"status":"ok"}` + 클라이언트(5173)에서 프록시로 동일 응답 확인. npm 네이티브 모듈(better-sqlite3, esbuild, fsevents) install script는 `npm approve-scripts`로 승인 필요(`package.json`의 `allowScripts`에 기록됨).
 
-## T1. 데이터 모델 (R1-D-01~04, 기획서 6.2)
+## T1. 데이터 모델 (R1-D-01~04, 기획서 6.2) [x]
 
-- [ ] 테이블: 거래처(CUSTOMER), 납품처(DELIVERY_SITE), 제품(PRODUCT), 제품별칭(PRODUCT_ALIAS),
-      주문(ORDER_HDR/ORDER_DTL), 출고지시(SHIP_ORDER, SHIP_ORDER_DTL), 출고실적(SHIP_RESULT),
-      거래명세서(INVOICE_HDR/INVOICE_DTL)
-- [ ] 문서 간 상호 역참조 키 보유(주문번호 ↔ 출고지시번호 ↔ 명세서번호)
-- [ ] 원본 표기명(거래처 제품명) 컬럼과 표준 제품코드 컬럼 분리 저장
+- [x] 테이블: 거래처(CUSTOMER), 납품처(DELIVERY_SITE), 제품(PRODUCT), 제품별칭(PRODUCT_ALIAS),
+      주문(ORDER_HDR/ORDER_DTL), 출고지시(SHIP_ORDER, SHIP_ORDER_DTL, SHIP_ORDER_SRC), 출고실적(SHIP_RESULT),
+      거래명세서(INVOICE_HDR/INVOICE_DTL). 추가로 거래처별 단가표(CUSTOMER_PRICE)도 포함(R1-F-04 세부 요구사항).
+- [x] 문서 간 상호 역참조 키 보유(주문번호 ↔ 출고지시번호 ↔ 명세서번호) — `ship_order_src`, `invoice_dtl.order_no/ship_order_no`로 구현, 조인 테스트로 3단계 역추적 확인
+- [x] 원본 표기명(거래처 제품명) 컬럼과 표준 제품코드 컬럼 분리 저장 — `order_dtl.raw_product_name` vs `order_dtl.product_code`(매핑 전 NULL 허용)
 - 완료 기준: 스키마로 생성된 DB에 샘플 데이터 삽입/조회 테스트 통과, ERD가 기획서 6.2 표와 1:1 대응
+- 검증 방법: `server/db/schema.sql` + `server/test/schema.test.js` (5 테스트: 마스터 삽입/조회, 주문→출고지시→명세서 조인 역추적, 원본표기/표준코드 분리, CHECK 제약 2건). `npm test` 전체 6개 통과.
+- 참고: `ship_order_dtl`은 "동일 납품처·제품 수량 합산" 결과 1행이며, 원 주문 라인과의 배분 관계는 `ship_order_src`(N:M)로 별도 보관해 기획서 6.2의 "합산 수량, 원 주문 매핑 테이블" 요건을 충족.
 
 ## 우선순위 "상" — 1차 완료 필수 (기능)
 
@@ -89,3 +91,4 @@
 > 루프가 작업을 완료할 때마다 한 줄씩 추가: `날짜 | 요구사항ID | 요약 | 커밋 해시`
 
 - 2026-09-30 | T0 | Node/Express/SQLite 서버 + React/Vite 클라이언트 모노레포 스캐폴딩, 헬스체크 동작 확인 | 6403236
+- 2026-09-30 | T1 | 전체 데이터 모델(거래처/제품/별칭/주문/출고지시/출고실적/거래명세서) 스키마 및 역참조 조인 테스트 | (다음 커밋에서 해시 반영)
