@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { buildOrderUploadTemplateWorkbook } from '../lib/orderUploadXlsx.js';
+import { buildOrdersExportWorkbook } from '../lib/orderExportXlsx.js';
 import { previewOrderUpload, commitOrderUpload } from '../services/orderUploadService.js';
 import { validateOrderForConfirm, confirmOrder } from '../services/orderValidationService.js';
 import * as orderRepo from '../repositories/orderRepository.js';
@@ -47,14 +48,41 @@ export function ordersRouter(db) {
   });
 
   router.get('/', (req, res) => {
-    const { customer_code, status, order_date_from, order_date_to } = req.query;
-    res.json(orderRepo.listOrders(db, { customer_code, status, order_date_from, order_date_to }));
+    res.json(orderRepo.listOrders(db, req.query));
+  });
+
+  // R1-F-02 세부 4) 조회 결과 엑셀 다운로드 (목록과 동일한 필터 조건)
+  router.get('/export', async (req, res, next) => {
+    try {
+      const buffer = await buildOrdersExportWorkbook(db, req.query);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="orders_export.xlsx"');
+      res.send(Buffer.from(buffer));
+    } catch (err) {
+      next(err);
+    }
   });
 
   router.get('/:orderNo', (req, res) => {
     const order = orderRepo.getOrderWithLines(db, req.params.orderNo);
     if (!order) return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
     res.json(order);
+  });
+
+  // R1-F-02 세부 1) 수정 (RECEIVED 상태에서만 허용)
+  router.put('/:orderNo', (req, res, next) => {
+    try {
+      const updated = orderRepo.updateOrder(db, req.params.orderNo, req.body ?? {});
+      if (!updated) return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
+      res.json(updated);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // R1-F-02 완료 기준: 주문 등록 후 상태 변경 이력을 화면에서 확인
+  router.get('/:orderNo/status-history', (req, res) => {
+    res.json(orderRepo.getStatusHistory(db, req.params.orderNo));
   });
 
   // R1-F-05: 확정 전 정합성 검증 (행 단위 오류/경고)

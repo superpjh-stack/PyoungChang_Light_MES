@@ -107,6 +107,17 @@ CREATE TABLE IF NOT EXISTS order_dtl (
 );
 CREATE INDEX IF NOT EXISTS idx_order_dtl_product ON order_dtl(product_code);
 
+-- 주문 상태 변경 이력 (R1-F-02 완료 기준: "상태 변경 이력이 화면에서 확인됨")
+CREATE TABLE IF NOT EXISTS order_status_log (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_no      TEXT NOT NULL REFERENCES order_hdr(order_no) ON DELETE CASCADE,
+  from_status   TEXT,
+  to_status     TEXT NOT NULL,
+  changed_by    TEXT,
+  changed_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_order_status_log_order ON order_status_log(order_no);
+
 -- 출고지시 헤더 (R1-D-02)
 CREATE TABLE IF NOT EXISTS ship_order (
   ship_order_no   TEXT PRIMARY KEY,      -- 채번

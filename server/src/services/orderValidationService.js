@@ -44,7 +44,7 @@ export function validateOrderForConfirm(db, orderNo) {
   return { order_no: orderNo, valid: errors.length === 0, errors, warnings };
 }
 
-export function confirmOrder(db, orderNo) {
+export function confirmOrder(db, orderNo, { changed_by } = {}) {
   const order = orderRepo.getOrderWithLines(db, orderNo);
   if (!order) {
     const err = new Error('주문을 찾을 수 없습니다');
@@ -65,6 +65,6 @@ export function confirmOrder(db, orderNo) {
     throw err;
   }
 
-  db.prepare(`UPDATE order_hdr SET status = 'CONFIRMED', updated_at = datetime('now') WHERE order_no = ?`).run(orderNo);
+  orderRepo.changeOrderStatus(db, orderNo, 'CONFIRMED', changed_by);
   return { ...orderRepo.getOrderWithLines(db, orderNo), warnings: validation.warnings };
 }
