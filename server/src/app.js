@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { customersRouter } from './routes/customers.js';
 import { productsRouter, productAliasesRouter } from './routes/products.js';
+import { ordersRouter } from './routes/orders.js';
 
 export function createApp(db) {
   const app = express();
@@ -16,6 +17,7 @@ export function createApp(db) {
   app.use('/api/customers', customersRouter(db));
   app.use('/api/products', productsRouter(db));
   app.use('/api/product-aliases', productAliasesRouter(db));
+  app.use('/api/orders', ordersRouter(db));
 
   return app;
 }
