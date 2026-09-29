@@ -32,6 +32,31 @@ function findShipOrderNo(db, orderNo, lineNo) {
   return row?.ship_order_no ?? null;
 }
 
+// R1-N-05: 명세서는 "주문 수량"이 아니라 실제 "출고 실적 수량"을 근거로 발급해야 주문·출고·명세서 간
+// 수량이 일치한다. 지시수량 대비 실적 차이(F-07)가 있었다면 그 차이가 그대로 청구 수량에 반영된다.
+// 하나의 출고지시상세(ship_order_dtl)에 여러 주문의 라인이 합산돼 있을 수 있으므로(R1-F-06 합산 생성),
+// 실적은 각 주문 라인이 배분받은 비율(allocated_qty / instructed_qty)만큼 귀속시킨다.
+function getActualShippedQty(db, orderNo, lineNo) {
+  const allocations = db
+    .prepare(
+      `SELECT src.ship_order_dtl_id, src.allocated_qty, sod.instructed_qty
+       FROM ship_order_src src
+       JOIN ship_order_dtl sod ON sod.ship_order_dtl_id = src.ship_order_dtl_id
+       WHERE src.order_no = ? AND src.order_line_no = ?`
+    )
+    .all(orderNo, lineNo);
+
+  let total = 0;
+  for (const alloc of allocations) {
+    if (!alloc.instructed_qty) continue;
+    const actualForDtl = db
+      .prepare('SELECT COALESCE(SUM(actual_qty), 0) AS total FROM ship_result WHERE ship_order_dtl_id = ?')
+      .get(alloc.ship_order_dtl_id).total;
+    total += actualForDtl * (alloc.allocated_qty / alloc.instructed_qty);
+  }
+  return Math.round(total);
+}
+
 // R1-F-08 세부2) 공급가액·부가세·합계 계산, 과세/면세 구분
 function calcLineAmounts(quantity, unitPrice, taxType) {
   const supply_amount = Math.round(quantity * unitPrice);
@@ -69,17 +94,22 @@ export function computeInvoiceGroups(db, { invoice_date, customer_code, split_by
     let unresolved = null;
 
     for (const line of orderLines) {
+      const actualQty = getActualShippedQty(db, order.order_no, line.line_no);
+      if (actualQty <= 0) {
+        unresolved = { ...line, __reason: '출고 실적이 없어 청구 수량을 확정할 수 없습니다' };
+        break;
+      }
       const price = resolveUnitPrice(db, order, line);
       if (!price) {
         unresolved = line;
         break;
       }
       const product = productRepo.getProduct(db, line.product_code);
-      const { supply_amount, tax_amount } = calcLineAmounts(line.quantity, price.unit_price, product?.tax_type ?? 'TAXABLE');
+      const { supply_amount, tax_amount } = calcLineAmounts(actualQty, price.unit_price, product?.tax_type ?? 'TAXABLE');
       resolvedLines.push({
         product_code: line.product_code,
         spec: line.spec ?? product?.spec ?? null,
-        quantity: line.quantity,
+        quantity: actualQty,
         unit: line.unit,
         unit_price: price.unit_price,
         price_source: price.source,
@@ -94,7 +124,9 @@ export function computeInvoiceGroups(db, { invoice_date, customer_code, split_by
     if (unresolved) {
       excludedOrders.push({
         order_no: order.order_no,
-        reason: `단가를 확정할 수 없습니다 (주문단가/거래처단가표/기본단가 모두 없음): ${unresolved.raw_product_name}`,
+        reason:
+          unresolved.__reason ??
+          `단가를 확정할 수 없습니다 (주문단가/거래처단가표/기본단가 모두 없음): ${unresolved.raw_product_name}`,
       });
       continue;
     }
@@ -142,4 +174,59 @@ export function generateInvoices(db, filters, { registered_by } = {}) {
   tx();
 
   return { invoices, excludedOrders };
+}
+
+// R1-N-05: 발행 확정 전, 명세서에 청구된 수량/금액이 "현재" 출고 실적·계산과 여전히 일치하는지 재검증한다.
+// (명세서 생성 이후 해당 주문 라인에 출고 실적이 추가/정정되면 청구 수량이 최신 실적과 어긋날 수 있다)
+export function validateInvoiceConsistency(db, invoiceNo) {
+  const invoice = invoiceRepo.getInvoiceWithLines(db, invoiceNo);
+  if (!invoice) {
+    const err = new Error('거래명세서를 찾을 수 없습니다');
+    err.status = 404;
+    throw err;
+  }
+
+  const mismatches = [];
+  for (const line of invoice.lines) {
+    const orderLines = db
+      .prepare('SELECT line_no FROM order_dtl WHERE order_no = ? AND product_code = ?')
+      .all(line.order_no, line.product_code);
+    const currentActualQty = orderLines.reduce(
+      (sum, ol) => sum + getActualShippedQty(db, line.order_no, ol.line_no),
+      0
+    );
+    if (currentActualQty !== line.quantity) {
+      mismatches.push({
+        order_no: line.order_no,
+        product_code: line.product_code,
+        invoiced_qty: line.quantity,
+        current_shipped_qty: currentActualQty,
+        reason: '명세서 생성 이후 출고 실적이 변경되어 청구 수량과 일치하지 않습니다',
+      });
+    }
+  }
+
+  const recomputedSupply = invoice.lines.reduce((sum, l) => sum + l.supply_amount, 0);
+  const recomputedTax = invoice.lines.reduce((sum, l) => sum + l.tax_amount, 0);
+  if (recomputedSupply !== invoice.supply_amount || recomputedTax !== invoice.tax_amount) {
+    mismatches.push({
+      reason: '명세서 헤더 합계가 라인 합계와 일치하지 않습니다',
+      header: { supply_amount: invoice.supply_amount, tax_amount: invoice.tax_amount },
+      recomputed: { supply_amount: recomputedSupply, tax_amount: recomputedTax },
+    });
+  }
+
+  return { valid: mismatches.length === 0, mismatches };
+}
+
+// R1-N-05 완료 기준: 불일치 시 발행 차단
+export function issueInvoiceWithValidation(db, invoiceNo) {
+  const validation = validateInvoiceConsistency(db, invoiceNo);
+  if (!validation.valid) {
+    const err = new Error('주문·출고 실적과 청구 수량이 일치하지 않아 발행할 수 없습니다');
+    err.status = 422;
+    err.details = validation;
+    throw err;
+  }
+  return invoiceRepo.issueInvoice(db, invoiceNo);
 }

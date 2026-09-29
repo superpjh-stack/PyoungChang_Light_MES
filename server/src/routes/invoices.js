@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as invoiceRepo from '../repositories/invoiceRepository.js';
-import { previewInvoices, generateInvoices } from '../services/invoiceService.js';
+import { previewInvoices, generateInvoices, issueInvoiceWithValidation, validateInvoiceConsistency } from '../services/invoiceService.js';
 import { sendToErp, confirmErpResult, retryErpTransmission, sendBatch } from '../services/erpTransmissionService.js';
 import { fileImportAdapter } from '../services/erpAdapters/fileImportAdapter.js';
 import { buildInvoiceExportWorkbook } from '../lib/invoiceExportXlsx.js';
@@ -39,10 +39,19 @@ export function invoicesRouter(db) {
     res.json(invoice);
   });
 
-  // R1-F-08 발행 절차 3) 발행 확정 (DRAFT → ISSUED). ERP 전송은 R1-F-09에서
+  // R1-F-08 발행 절차 3) 발행 확정 (DRAFT → ISSUED). R1-N-05: 불일치 시 차단(422)
   router.post('/:invoiceNo/issue', (req, res, next) => {
     try {
-      res.json(invoiceRepo.issueInvoice(db, req.params.invoiceNo));
+      res.json(issueInvoiceWithValidation(db, req.params.invoiceNo));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // R1-N-05: 발행 전 정합성 사전 확인용 (선택)
+  router.get('/:invoiceNo/validate', (req, res, next) => {
+    try {
+      res.json(validateInvoiceConsistency(db, req.params.invoiceNo));
     } catch (err) {
       next(err);
     }
@@ -118,7 +127,7 @@ export function invoicesRouter(db) {
 
   // eslint-disable-next-line no-unused-vars
   router.use((err, req, res, next) => {
-    res.status(err.status ?? 500).json({ error: err.message });
+    res.status(err.status ?? 500).json({ error: err.message, details: err.details });
   });
 
   return router;
