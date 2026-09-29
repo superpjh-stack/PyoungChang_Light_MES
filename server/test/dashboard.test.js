@@ -36,6 +36,7 @@ describe('R1-F-11 주문·출고 현황 대시보드', () => {
     await request(app)
       .post('/api/product-aliases')
       .send({ customer_code: 'C0012', raw_name: '고랭지띄고10kg', product_code: 'KC-HW-10' });
+    await request(app).post('/api/users').send({ user_id: 'op1', name: '운영자', role: 'OPERATOR' });
   });
 
   afterEach(() => {
@@ -131,8 +132,8 @@ describe('R1-F-11 주문·출고 현황 대시보드', () => {
       .post(`/api/ship-orders/lines/${shipOrder.body.lines[0].ship_order_dtl_id}/results`)
       .send({ actual_qty: shipOrder.body.lines[0].instructed_qty });
     const invGen = await request(app).post('/api/invoices/generate').send({ invoice_date: TODAY });
-    await request(app).post(`/api/invoices/${invGen.body.invoices[0]}/issue`);
-    await request(app).post(`/api/invoices/${invGen.body.invoices[0]}/erp/send`);
+    await request(app).post(`/api/invoices/${invGen.body.invoices[0]}/issue`).set('X-User-Id', 'op1');
+    await request(app).post(`/api/invoices/${invGen.body.invoices[0]}/erp/send`).set('X-User-Id', 'op1');
 
     const dashboard = await request(app).get(`/api/dashboard/summary?date=${TODAY}`);
     expect(dashboard.body.erp.sendingCount).toBe(1);

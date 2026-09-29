@@ -5,6 +5,7 @@ import { buildOrdersExportWorkbook } from '../lib/orderExportXlsx.js';
 import { previewOrderUpload, commitOrderUpload } from '../services/orderUploadService.js';
 import { validateOrderForConfirm, confirmOrder } from '../services/orderValidationService.js';
 import { traceOrder, listPendingShipment, listPendingInvoice } from '../services/traceService.js';
+import { recordAuditLog } from '../repositories/auditLogRepository.js';
 import * as orderRepo from '../repositories/orderRepository.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -79,11 +80,18 @@ export function ordersRouter(db) {
     res.json(order);
   });
 
-  // R1-F-02 세부 1) 수정 (RECEIVED 상태에서만 허용)
+  // R1-F-02 세부 1) 수정 (RECEIVED 상태에서만 허용). R1-N-07: 감사 로그 기록
   router.put('/:orderNo', (req, res, next) => {
     try {
       const updated = orderRepo.updateOrder(db, req.params.orderNo, req.body ?? {});
       if (!updated) return res.status(404).json({ error: '주문을 찾을 수 없습니다' });
+      recordAuditLog(db, {
+        entity_type: 'ORDER',
+        entity_id: req.params.orderNo,
+        action: 'ORDER_UPDATE',
+        user_id: req.user?.user_id ?? null,
+        detail: JSON.stringify(req.body ?? {}),
+      });
       res.json(updated);
     } catch (err) {
       next(err);

@@ -48,6 +48,7 @@ describe('R1-F-08 거래 명세서 자동 생성', () => {
     await request(app)
       .post('/api/products')
       .send({ product_code: 'KC-RICE-01', name: '쌀 20kg', tax_type: 'EXEMPT', default_price: 50000 });
+    await request(app).post('/api/users').send({ user_id: 'op1', name: '운영자', role: 'OPERATOR' });
     await request(app)
       .post('/api/product-aliases')
       .send({ customer_code: 'C0012', raw_name: '고랭지띄고10kg', product_code: 'KC-HW-10' });
@@ -184,11 +185,11 @@ describe('R1-F-08 거래 명세서 자동 생성', () => {
     const gen = await request(app).post('/api/invoices/generate').send({ invoice_date: '2026-11-05' });
     const invoiceNo = gen.body.invoices[0];
 
-    const issue = await request(app).post(`/api/invoices/${invoiceNo}/issue`);
+    const issue = await request(app).post(`/api/invoices/${invoiceNo}/issue`).set('X-User-Id', 'op1');
     expect(issue.status).toBe(200);
     expect(issue.body.status).toBe('ISSUED');
 
-    const reissue = await request(app).post(`/api/invoices/${invoiceNo}/issue`);
+    const reissue = await request(app).post(`/api/invoices/${invoiceNo}/issue`).set('X-User-Id', 'op1');
     expect(reissue.status).toBe(409);
   });
 

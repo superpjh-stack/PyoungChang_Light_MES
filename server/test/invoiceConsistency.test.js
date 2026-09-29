@@ -36,6 +36,7 @@ describe('R1-N-05 주문·출고·명세서 수량/금액 정합성', () => {
     await request(app).post('/api/customers').send({ customer_code: 'C0012', name: '○○홈쇼핑' });
     await request(app).post('/api/products').send({ product_code: 'KC-HW-10', name: '고랭지 황태김치 10kg' });
     await request(app).post('/api/product-aliases').send({ customer_code: 'C0012', raw_name: '고랭지띄고10kg', product_code: 'KC-HW-10' });
+    await request(app).post('/api/users').send({ user_id: 'op1', name: '운영자', role: 'OPERATOR' });
   });
 
   afterEach(() => {
@@ -111,7 +112,7 @@ describe('R1-N-05 주문·출고·명세서 수량/금액 정합성', () => {
     expect(validate.body.valid).toBe(false);
     expect(validate.body.mismatches[0]).toMatchObject({ invoiced_qty: 8, current_shipped_qty: 10 });
 
-    const issue = await request(app).post(`/api/invoices/${invoiceNo}/issue`);
+    const issue = await request(app).post(`/api/invoices/${invoiceNo}/issue`).set('X-User-Id', 'op1');
     expect(issue.status).toBe(422);
     expect(issue.body.details.mismatches).toHaveLength(1);
 
@@ -136,7 +137,7 @@ describe('R1-N-05 주문·출고·명세서 수량/금액 정합성', () => {
     const validate = await request(app).get(`/api/invoices/${invoiceNo}/validate`);
     expect(validate.body).toEqual({ valid: true, mismatches: [] });
 
-    const issue = await request(app).post(`/api/invoices/${invoiceNo}/issue`);
+    const issue = await request(app).post(`/api/invoices/${invoiceNo}/issue`).set('X-User-Id', 'op1');
     expect(issue.status).toBe(200);
     expect(issue.body.status).toBe('ISSUED');
   });

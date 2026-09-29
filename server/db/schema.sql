@@ -5,6 +5,27 @@
 
 PRAGMA foreign_keys = ON;
 
+-- 사용자 계정 (R1-N-06 RBAC). 별도 로그인 체계는 없고, 요청 헤더(X-User-Id)로 신원을 식별하는
+-- 경량 방식으로 구현했다 — 실제 운영 전환 시 정식 인증(SSO 등)으로 교체 필요 (PROGRESS.md 확인 필요 참고).
+CREATE TABLE IF NOT EXISTS app_user (
+  user_id     TEXT PRIMARY KEY,
+  name        TEXT NOT NULL,
+  role        TEXT NOT NULL CHECK (role IN ('ADMIN', 'OPERATOR', 'VIEWER')),
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- 감사 로그 (R1-N-07). 주문 수정/매핑 변경/ERP 전송 등 주요 변경 행위에 사용자·일시를 기록한다.
+CREATE TABLE IF NOT EXISTS audit_log (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_type  TEXT NOT NULL,   -- 예: ORDER, PRODUCT_ALIAS, INVOICE
+  entity_id    TEXT NOT NULL,
+  action       TEXT NOT NULL,   -- 예: ORDER_UPDATE, ALIAS_CREATE, ERP_SEND
+  user_id      TEXT,            -- 식별된 사용자 없으면 NULL (헤더 미제공 등)
+  detail       TEXT,            -- 사람이 읽을 수 있는 변경 요약 (JSON 문자열도 허용)
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON audit_log(entity_type, entity_id);
+
 -- 거래처 (기획서 6.2 CUSTOMER)
 CREATE TABLE IF NOT EXISTS customer (
   customer_code   TEXT PRIMARY KEY,

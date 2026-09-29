@@ -33,7 +33,7 @@ async function createIssuedInvoice(app, { orderQty = 10, unitPrice = 38000, ship
   }
   const invoiceGen = await request(app).post('/api/invoices/generate').send({ invoice_date: shipDate });
   const invoiceNo = invoiceGen.body.invoices[0];
-  await request(app).post(`/api/invoices/${invoiceNo}/issue`);
+  await request(app).post(`/api/invoices/${invoiceNo}/issue`).set('X-User-Id', 'op1');
   return invoiceNo;
 }
 
@@ -51,6 +51,7 @@ describe('R1-F-09 ERP 거래 명세서 연동 전송', () => {
     await request(app)
       .post('/api/product-aliases')
       .send({ customer_code: 'C0012', raw_name: '고랭지띄고10kg', product_code: 'KC-HW-10' });
+    await request(app).post('/api/users').send({ user_id: 'op1', name: '운영자', role: 'OPERATOR' });
   });
 
   afterEach(() => {
@@ -71,14 +72,14 @@ describe('R1-F-09 ERP 거래 명세서 연동 전송', () => {
       .send({ actual_qty: shipOrder.body.lines[0].instructed_qty });
     const invoiceGen = await request(app).post('/api/invoices/generate').send({ invoice_date: '2026-11-05' });
 
-    const res = await request(app).post(`/api/invoices/${invoiceGen.body.invoices[0]}/erp/send`);
+    const res = await request(app).post(`/api/invoices/${invoiceGen.body.invoices[0]}/erp/send`).set('X-User-Id', 'op1');
     expect(res.status).toBe(409);
   });
 
   it('발행된 명세서를 전송하면 상태가 전송중(SENDING)이 되고 Import 파일 내용이 명세서 항목과 일치한다 (수용 기준)', async () => {
     const invoiceNo = await createIssuedInvoice(app);
 
-    const send = await request(app).post(`/api/invoices/${invoiceNo}/erp/send`);
+    const send = await request(app).post(`/api/invoices/${invoiceNo}/erp/send`).set('X-User-Id', 'op1');
     expect(send.status).toBe(200);
     expect(send.body.erp_send_status).toBe('SENDING');
     expect(send.body.transmission.filename).toBe(`${invoiceNo}_erp_import.csv`);
@@ -96,10 +97,11 @@ describe('R1-F-09 ERP 거래 명세서 연동 전송', () => {
 
   it('전송 성공을 확정하면 상태가 SUCCESS로 바뀌고 ERP 명세서번호가 저장된다', async () => {
     const invoiceNo = await createIssuedInvoice(app);
-    await request(app).post(`/api/invoices/${invoiceNo}/erp/send`);
+    await request(app).post(`/api/invoices/${invoiceNo}/erp/send`).set('X-User-Id', 'op1');
 
     const confirm = await request(app)
       .post(`/api/invoices/${invoiceNo}/erp/confirm`)
+      .set('X-User-Id', 'op1')
       .send({ success: true, erp_invoice_no: 'ERP-INV-9001' });
     expect(confirm.status).toBe(200);
     expect(confirm.body.erp_send_status).toBe('SUCCESS');
@@ -108,19 +110,20 @@ describe('R1-F-09 ERP 거래 명세서 연동 전송', () => {
 
   it('SENDING 상태가 아니면 결과를 확정할 수 없다', async () => {
     const invoiceNo = await createIssuedInvoice(app);
-    const res = await request(app).post(`/api/invoices/${invoiceNo}/erp/confirm`).send({ success: true });
+    const res = await request(app).post(`/api/invoices/${invoiceNo}/erp/confirm`).set('X-User-Id', 'op1').send({ success: true });
     expect(res.status).toBe(409);
   });
 
   it('실패 확정 시 사유가 없으면 400, 있으면 FAILED로 저장된다', async () => {
     const invoiceNo = await createIssuedInvoice(app);
-    await request(app).post(`/api/invoices/${invoiceNo}/erp/send`);
+    await request(app).post(`/api/invoices/${invoiceNo}/erp/send`).set('X-User-Id', 'op1');
 
-    const noReason = await request(app).post(`/api/invoices/${invoiceNo}/erp/confirm`).send({ success: false });
+    const noReason = await request(app).post(`/api/invoices/${invoiceNo}/erp/confirm`).set('X-User-Id', 'op1').send({ success: false });
     expect(noReason.status).toBe(400);
 
     const withReason = await request(app)
       .post(`/api/invoices/${invoiceNo}/erp/confirm`)
+      .set('X-User-Id', 'op1')
       .send({ success: false, error_message: '거래처 코드 매핑 오류' });
     expect(withReason.status).toBe(200);
     expect(withReason.body.erp_send_status).toBe('FAILED');
@@ -129,23 +132,23 @@ describe('R1-F-09 ERP 거래 명세서 연동 전송', () => {
 
   it('실패 건은 재전송할 수 있고, 실패가 아닌 건은 재전송할 수 없다', async () => {
     const invoiceNo = await createIssuedInvoice(app);
-    await request(app).post(`/api/invoices/${invoiceNo}/erp/send`);
-    await request(app).post(`/api/invoices/${invoiceNo}/erp/confirm`).send({ success: false, error_message: '오류' });
+    await request(app).post(`/api/invoices/${invoiceNo}/erp/send`).set('X-User-Id', 'op1');
+    await request(app).post(`/api/invoices/${invoiceNo}/erp/confirm`).set('X-User-Id', 'op1').send({ success: false, error_message: '오류' });
 
-    const retry = await request(app).post(`/api/invoices/${invoiceNo}/erp/retry`);
+    const retry = await request(app).post(`/api/invoices/${invoiceNo}/erp/retry`).set('X-User-Id', 'op1');
     expect(retry.status).toBe(200);
     expect(retry.body.erp_send_status).toBe('SENDING');
 
-    const retryAgain = await request(app).post(`/api/invoices/${invoiceNo}/erp/retry`);
+    const retryAgain = await request(app).post(`/api/invoices/${invoiceNo}/erp/retry`).set('X-User-Id', 'op1');
     expect(retryAgain.status).toBe(409); // 지금은 SENDING 상태라 재전송 불가
   });
 
   it('이미 성공한 명세서는 다시 전송할 수 없다', async () => {
     const invoiceNo = await createIssuedInvoice(app);
-    await request(app).post(`/api/invoices/${invoiceNo}/erp/send`);
-    await request(app).post(`/api/invoices/${invoiceNo}/erp/confirm`).send({ success: true });
+    await request(app).post(`/api/invoices/${invoiceNo}/erp/send`).set('X-User-Id', 'op1');
+    await request(app).post(`/api/invoices/${invoiceNo}/erp/confirm`).set('X-User-Id', 'op1').send({ success: true });
 
-    const resend = await request(app).post(`/api/invoices/${invoiceNo}/erp/send`);
+    const resend = await request(app).post(`/api/invoices/${invoiceNo}/erp/send`).set('X-User-Id', 'op1');
     expect(resend.status).toBe(409);
   });
 
@@ -153,7 +156,7 @@ describe('R1-F-09 ERP 거래 명세서 연동 전송', () => {
     // 동일 거래처·동일 거래일자 주문은 하나의 명세서로 합쳐지므로, 배치 전송은 그 명세서 1건으로 확인한다.
     const invoiceNoA = await createIssuedInvoice(app, { shipDate: '2026-11-06' });
 
-    const batch = await request(app).post('/api/invoices/erp/send-batch').send({ invoice_date: '2026-11-06' });
+    const batch = await request(app).post('/api/invoices/erp/send-batch').set('X-User-Id', 'op1').send({ invoice_date: '2026-11-06' });
     expect(batch.body).toEqual([{ invoice_no: invoiceNoA, filename: `${invoiceNoA}_erp_import.csv`, status: 'SENDING' }]);
 
     const invoice = await request(app).get(`/api/invoices/${invoiceNoA}`);
@@ -161,7 +164,7 @@ describe('R1-F-09 ERP 거래 명세서 연동 전송', () => {
   });
 
   it('존재하지 않는 명세서에 대한 ERP 작업은 404를 반환한다', async () => {
-    const res = await request(app).post('/api/invoices/NOPE/erp/send');
+    const res = await request(app).post('/api/invoices/NOPE/erp/send').set('X-User-Id', 'op1');
     expect(res.status).toBe(404);
   });
 });

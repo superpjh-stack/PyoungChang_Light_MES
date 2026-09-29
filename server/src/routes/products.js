@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as productRepo from '../repositories/productRepository.js';
 import * as aliasRepo from '../repositories/productAliasRepository.js';
 import { matchProductName } from '../services/productMatchingService.js';
+import { recordAuditLog } from '../repositories/auditLogRepository.js';
 
 export function productsRouter(db) {
   const router = Router();
@@ -46,9 +47,18 @@ export function productAliasesRouter(db) {
     res.json(aliasRepo.listAliases(db, { customer_code, product_code }));
   });
 
+  // R1-N-07: 매핑(별칭) 변경 감사 로그 기록
   router.post('/', (req, res, next) => {
     try {
-      res.status(201).json(aliasRepo.createAlias(db, req.body ?? {}));
+      const created = aliasRepo.createAlias(db, req.body ?? {});
+      recordAuditLog(db, {
+        entity_type: 'PRODUCT_ALIAS',
+        entity_id: String(created.id),
+        action: 'ALIAS_CREATE',
+        user_id: req.user?.user_id ?? null,
+        detail: `${created.customer_code}:${created.raw_name} → ${created.product_code}`,
+      });
+      res.status(201).json(created);
     } catch (err) {
       next(err);
     }

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { listPendingMappings, resolvePendingMapping } from '../services/productMatchingService.js';
+import { recordAuditLog } from '../repositories/auditLogRepository.js';
 
 export function mappingQueueRouter(db) {
   const router = Router();
@@ -18,7 +19,15 @@ export function mappingQueueRouter(db) {
         err.status = 400;
         throw err;
       }
-      res.json(resolvePendingMapping(db, { customer_code, raw_name, product_code, registered_by }));
+      const result = resolvePendingMapping(db, { customer_code, raw_name, product_code, registered_by });
+      recordAuditLog(db, {
+        entity_type: 'PRODUCT_ALIAS',
+        entity_id: String(result.alias.id),
+        action: 'MAPPING_RESOLVE',
+        user_id: req.user?.user_id ?? registered_by ?? null,
+        detail: `${customer_code}:${raw_name} → ${product_code} (미매핑 ${result.updatedLines}건 갱신)`,
+      });
+      res.json(result);
     } catch (err) {
       next(err);
     }
