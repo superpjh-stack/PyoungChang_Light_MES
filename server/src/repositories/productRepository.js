@@ -1,4 +1,4 @@
-export function createProduct(db, { product_code, name, spec, unit, tax_type, erp_item_code, pack_unit, pack_size }) {
+export function createProduct(db, { product_code, name, spec, unit, tax_type, erp_item_code, pack_unit, pack_size, default_price }) {
   if (!product_code || !name) {
     const err = new Error('product_code, name은 필수입니다');
     err.status = 400;
@@ -11,8 +11,8 @@ export function createProduct(db, { product_code, name, spec, unit, tax_type, er
     throw err;
   }
   db.prepare(
-    `INSERT INTO product (product_code, name, spec, unit, tax_type, erp_item_code, pack_unit, pack_size)
-     VALUES (?, ?, ?, ?, COALESCE(?, 'TAXABLE'), ?, ?, ?)`
+    `INSERT INTO product (product_code, name, spec, unit, tax_type, erp_item_code, pack_unit, pack_size, default_price)
+     VALUES (?, ?, ?, ?, COALESCE(?, 'TAXABLE'), ?, ?, ?, ?)`
   ).run(
     product_code,
     name,
@@ -21,7 +21,8 @@ export function createProduct(db, { product_code, name, spec, unit, tax_type, er
     tax_type ?? null,
     erp_item_code ?? null,
     pack_unit ?? null,
-    pack_size ?? null
+    pack_size ?? null,
+    default_price ?? null
   );
   return getProduct(db, product_code);
 }
@@ -38,7 +39,7 @@ export function updateProduct(db, productCode, patch) {
   const existing = getProduct(db, productCode);
   if (!existing) return null;
 
-  const fields = ['name', 'spec', 'unit', 'tax_type', 'erp_item_code', 'pack_unit', 'pack_size'];
+  const fields = ['name', 'spec', 'unit', 'tax_type', 'erp_item_code', 'pack_unit', 'pack_size', 'default_price'];
   const updates = [];
   const params = [];
   for (const field of fields) {

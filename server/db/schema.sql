@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS product (
   erp_item_code   TEXT,
   pack_unit       TEXT,                 -- 포장 단위 (예: BOX) — R1-F-06 포장단위 환산용, 미설정 시 환산하지 않음
   pack_size       NUMERIC,              -- 1 pack_unit = pack_size * unit (예: 1BOX = 10(kg))
+  default_price   NUMERIC,              -- 기본 단가 (R1-F-08: 주문단가 → 거래처단가표 → 기본단가 순으로 적용)
   created_at      TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );

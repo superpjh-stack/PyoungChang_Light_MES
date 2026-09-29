@@ -5,6 +5,7 @@ import { productsRouter, productAliasesRouter } from './routes/products.js';
 import { ordersRouter } from './routes/orders.js';
 import { mappingQueueRouter } from './routes/mappingQueue.js';
 import { shipOrdersRouter } from './routes/shipOrders.js';
+import { invoicesRouter } from './routes/invoices.js';
 
 export function createApp(db) {
   const app = express();
@@ -22,6 +23,7 @@ export function createApp(db) {
   app.use('/api/orders', ordersRouter(db));
   app.use('/api/mapping-queue', mappingQueueRouter(db));
   app.use('/api/ship-orders', shipOrdersRouter(db));
+  app.use('/api/invoices', invoicesRouter(db));
 
   return app;
 }
