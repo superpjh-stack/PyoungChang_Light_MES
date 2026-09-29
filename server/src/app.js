@@ -10,6 +10,7 @@ import { dashboardRouter } from './routes/dashboard.js';
 import { usersRouter } from './routes/users.js';
 import { auditLogRouter } from './routes/auditLog.js';
 import { settingsRouter } from './routes/settings.js';
+import { erpMasterSyncRouter } from './routes/erpMasterSync.js';
 import { identifyUser } from './middleware/auth.js';
 
 export function createApp(db) {
@@ -35,6 +36,7 @@ export function createApp(db) {
   app.use('/api/users', usersRouter(db));
   app.use('/api/audit-log', auditLogRouter(db));
   app.use('/api/settings', settingsRouter(db));
+  app.use('/api/erp-sync', erpMasterSyncRouter(db));
 
   return app;
 }

@@ -113,6 +113,39 @@ export function addCustomerPrice(db, customerCode, { product_code, unit_price, e
   return listCustomerPrices(db, customerCode);
 }
 
+// R1-I-01: ERP→MES 단가 동기화용 upsert (동일 거래처+제품+적용일 재수신 시 단가만 갱신)
+export function upsertCustomerPrice(db, { customer_code, product_code, unit_price, effective_from }) {
+  const customer = db.prepare('SELECT 1 FROM customer WHERE customer_code = ?').get(customer_code);
+  if (!customer) {
+    const err = new Error(`존재하지 않는 거래처코드입니다: ${customer_code}`);
+    err.status = 400;
+    throw err;
+  }
+  const product = db.prepare('SELECT 1 FROM product WHERE product_code = ?').get(product_code);
+  if (!product) {
+    const err = new Error(`존재하지 않는 제품코드입니다: ${product_code}`);
+    err.status = 400;
+    throw err;
+  }
+  if (!(unit_price > 0)) {
+    const err = new Error('unit_price는 0보다 커야 합니다');
+    err.status = 400;
+    throw err;
+  }
+  const effectiveFrom = effective_from ?? new Date().toISOString().slice(0, 10);
+  const existing = db
+    .prepare('SELECT id FROM customer_price WHERE customer_code = ? AND product_code = ? AND effective_from = ?')
+    .get(customer_code, product_code, effectiveFrom);
+  if (existing) {
+    db.prepare('UPDATE customer_price SET unit_price = ? WHERE id = ?').run(unit_price, existing.id);
+    return { id: existing.id, updated: true };
+  }
+  const result = db
+    .prepare('INSERT INTO customer_price (customer_code, product_code, unit_price, effective_from) VALUES (?, ?, ?, ?)')
+    .run(customer_code, product_code, unit_price, effectiveFrom);
+  return { id: result.lastInsertRowid, updated: false };
+}
+
 export function listCustomerPrices(db, customerCode) {
   return db
     .prepare('SELECT * FROM customer_price WHERE customer_code = ? ORDER BY product_code, effective_from DESC')
