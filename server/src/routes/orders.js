@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { buildOrderUploadTemplateWorkbook } from '../lib/orderUploadXlsx.js';
 import { previewOrderUpload, commitOrderUpload } from '../services/orderUploadService.js';
+import { validateOrderForConfirm, confirmOrder } from '../services/orderValidationService.js';
 import * as orderRepo from '../repositories/orderRepository.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -56,9 +57,27 @@ export function ordersRouter(db) {
     res.json(order);
   });
 
+  // R1-F-05: 확정 전 정합성 검증 (행 단위 오류/경고)
+  router.get('/:orderNo/validate', (req, res, next) => {
+    try {
+      res.json(validateOrderForConfirm(db, req.params.orderNo));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // R1-F-05 세부내용 3) 검증 실패 건은 확정 불가
+  router.post('/:orderNo/confirm', (req, res, next) => {
+    try {
+      res.json(confirmOrder(db, req.params.orderNo));
+    } catch (err) {
+      next(err);
+    }
+  });
+
   // eslint-disable-next-line no-unused-vars
   router.use((err, req, res, next) => {
-    res.status(err.status ?? 500).json({ error: err.message });
+    res.status(err.status ?? 500).json({ error: err.message, details: err.details });
   });
 
   return router;
