@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { customersRouter } from './routes/customers.js';
 import { productsRouter, productAliasesRouter } from './routes/products.js';
 import { ordersRouter } from './routes/orders.js';
@@ -12,6 +15,10 @@ import { auditLogRouter } from './routes/auditLog.js';
 import { settingsRouter } from './routes/settings.js';
 import { erpMasterSyncRouter } from './routes/erpMasterSync.js';
 import { identifyUser } from './middleware/auth.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// 배포 시 client/dist를 이 서버가 그대로 서빙한다 (별도 nginx 없이 컨테이너 1개로 API+화면 제공)
+const CLIENT_DIST = path.join(__dirname, '..', '..', 'client', 'dist');
 
 export function createApp(db) {
   const app = express();
@@ -37,6 +44,15 @@ export function createApp(db) {
   app.use('/api/audit-log', auditLogRouter(db));
   app.use('/api/settings', settingsRouter(db));
   app.use('/api/erp-sync', erpMasterSyncRouter(db));
+
+  // client/dist가 빌드돼 있으면(프로덕션 배포) 정적 파일과 SPA 라우팅 폴백을 제공한다.
+  // 개발 중(vite dev server가 화면을 서빙)에는 dist가 없어 이 블록이 조용히 건너뛰어진다.
+  if (fs.existsSync(path.join(CLIENT_DIST, 'index.html'))) {
+    app.use(express.static(CLIENT_DIST));
+    app.get(/^(?!\/api).*/, (req, res) => {
+      res.sendFile(path.join(CLIENT_DIST, 'index.html'));
+    });
+  }
 
   return app;
 }

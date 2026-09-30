@@ -1,0 +1,12 @@
+node_modules
+server/node_modules
+client/node_modules
+client/dist
+server/data.sqlite3
+server/data.sqlite3-wal
+server/data.sqlite3-shm
+.git
+.gitignore
+.claude
+docs
+*.md
