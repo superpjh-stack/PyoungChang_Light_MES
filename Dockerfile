@@ -3,6 +3,9 @@
 # ---- 1) 클라이언트 빌드 ----
 FROM node:24-slim AS client-build
 WORKDIR /app
+# 루트 npm ci는 워크스페이스 전체(server의 better-sqlite3 포함)를 설치하므로 여기도 빌드 도구가 필요
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 COPY server/package.json server/package.json
 COPY client/package.json client/package.json
