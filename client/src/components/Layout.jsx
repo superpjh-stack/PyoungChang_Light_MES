@@ -46,8 +46,8 @@ export default function Layout() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="sidebar-title">
-          평창꽃순이 경량 MES
-          <small>주문·출고·거래명세서 연동</small>
+          평창꽃순이김치
+          <small>주문출고거래연동시스템</small>
         </div>
         <nav>
           {NAV_GROUPS.map((group) => (
