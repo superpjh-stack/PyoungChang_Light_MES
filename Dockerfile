@@ -13,6 +13,9 @@ RUN npm run build --workspace=client
 # ---- 2) 프로덕션 런타임 (서버만) ----
 FROM node:24-slim AS runtime
 WORKDIR /app
+# better-sqlite3는 Node 24용 프리빌드 바이너리가 없을 수 있어 소스 빌드 도구를 설치한다
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 COPY server/package.json server/package.json
 COPY client/package.json client/package.json
