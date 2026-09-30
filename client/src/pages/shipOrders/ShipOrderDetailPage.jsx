@@ -91,6 +91,9 @@ export default function ShipOrderDetailPage() {
         </div>
         <span className="spacer" />
         <ShipOrderStatusBadge status={shipOrder.status} />
+        <a className="btn" href={`/ship-orders/${shipOrderNo}/print`} target="_blank" rel="noreferrer">
+          미리보기 / PDF 출력
+        </a>
         <button className="btn" onClick={handleExport}>
           현장용 엑셀 다운로드
         </button>

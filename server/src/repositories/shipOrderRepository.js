@@ -126,11 +126,32 @@ export function generateShipOrders(db, filters, { registered_by } = {}) {
   return { shipOrders, totalInstructedQty, sourceOrderCount: touchedOrderNos.size };
 }
 
+// 미리보기/PDF 출력용 명칭 보강 (거래처명, 납품처, 제품명 등 코드만으로는 알 수 없는 정보)
 export function getShipOrderWithLines(db, shipOrderNo) {
-  const hdr = db.prepare('SELECT * FROM ship_order WHERE ship_order_no = ?').get(shipOrderNo);
+  const hdr = db
+    .prepare(
+      `SELECT so.*, c.name AS customer_name
+       FROM ship_order so
+       JOIN customer c ON c.customer_code = so.customer_code
+       WHERE so.ship_order_no = ?`
+    )
+    .get(shipOrderNo);
   if (!hdr) return null;
+
+  if (hdr.delivery_site_id) {
+    hdr.delivery_site = db
+      .prepare('SELECT site_name, address, receiver_name, receiver_phone FROM delivery_site WHERE delivery_site_id = ?')
+      .get(hdr.delivery_site_id);
+  }
+
   const lines = db
-    .prepare('SELECT * FROM ship_order_dtl WHERE ship_order_no = ? ORDER BY ship_order_dtl_id')
+    .prepare(
+      `SELECT d.*, p.name AS product_name, p.spec AS product_spec, p.unit AS product_unit
+       FROM ship_order_dtl d
+       JOIN product p ON p.product_code = d.product_code
+       WHERE d.ship_order_no = ?
+       ORDER BY d.ship_order_dtl_id`
+    )
     .all(shipOrderNo);
   const srcStmt = db.prepare('SELECT * FROM ship_order_src WHERE ship_order_dtl_id = ?');
   hdr.lines = lines.map((line) => ({ ...line, sources: srcStmt.all(line.ship_order_dtl_id) }));

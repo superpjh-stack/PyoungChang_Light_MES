@@ -351,3 +351,74 @@ label.checkbox-label {
   display: flex;
   gap: 6px;
 }
+
+/* 출고지시서 미리보기/PDF 출력 화면 */
+.print-page {
+  max-width: 800px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+.print-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.print-toolbar-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.print-doc {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  padding: 32px;
+}
+.print-title {
+  text-align: center;
+  letter-spacing: 4px;
+  margin-bottom: 24px;
+}
+.print-info-table,
+.print-line-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+.print-info-table th,
+.print-info-table td,
+.print-line-table th,
+.print-line-table td {
+  border: 1px solid #333;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.print-info-table th {
+  width: 110px;
+  background: #f5f5f5;
+  text-align: left;
+}
+.print-line-table th {
+  background: #f5f5f5;
+}
+.print-line-table td.num {
+  text-align: right;
+}
+.print-footnote {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+@media print {
+  .print-toolbar {
+    display: none;
+  }
+  .print-page {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+  .print-doc {
+    border: none;
+    padding: 0;
+  }
+}

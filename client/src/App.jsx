@@ -7,6 +7,7 @@ import OrderDetailPage from './pages/orders/OrderDetailPage.jsx';
 import MappingQueuePage from './pages/mapping/MappingQueuePage.jsx';
 import ShipOrderListPage from './pages/shipOrders/ShipOrderListPage.jsx';
 import ShipOrderDetailPage from './pages/shipOrders/ShipOrderDetailPage.jsx';
+import ShipOrderPrintPage from './pages/shipOrders/ShipOrderPrintPage.jsx';
 import InvoiceListPage from './pages/invoices/InvoiceListPage.jsx';
 import InvoiceDetailPage from './pages/invoices/InvoiceDetailPage.jsx';
 import CustomerListPage from './pages/customers/CustomerListPage.jsx';
@@ -20,6 +21,8 @@ import AuditLogPage from './pages/auditLog/AuditLogPage.jsx';
 function App() {
   return (
     <Routes>
+      <Route path="ship-orders/:shipOrderNo/print" element={<ShipOrderPrintPage />} />
+
       <Route element={<Layout />}>
         <Route index element={<DashboardPage />} />
 
