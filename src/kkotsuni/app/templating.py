@@ -5,7 +5,7 @@ from urllib.parse import quote
 from fastapi.templating import Jinja2Templates
 
 from .http import csrf_token
-from .nav import NAV
+from .nav import APP_NAME, NAV
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 LABELS = dict(
@@ -190,6 +190,7 @@ def render(request, template="page.html", context=None, status_code=200):
     context.update(
         request=request,
         nav=NAV,
+        app_name=APP_NAME,
         csrf=csrf_token(request),
         flash=request.session.pop("flash", None),
         dev_auth=getattr(request.app.state.settings, "dev_auth", False),
