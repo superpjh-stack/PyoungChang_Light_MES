@@ -1,13 +1,34 @@
 services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: kkotsuni_db
+      POSTGRES_USER: kkotsuni
+      POSTGRES_PASSWORD: ${KKOTSUNI_POSTGRES_PASSWORD:?Set KKOTSUNI_POSTGRES_PASSWORD}
+    volumes:
+      - kkotsuni_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kkotsuni -d kkotsuni_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
   app:
     build: .
-    image: pyoungchang-light-mes:latest
-    container_name: pyoungchang-light-mes
-    restart: unless-stopped
+    image: kkotsuni-mes:local
     ports:
-      - "8514:4000"
-    volumes:
-      - mes_data:/app/data
-
+      - "127.0.0.1:8000:8000"
+    environment:
+      KKOTSUNI_DATABASE_URL: postgresql://kkotsuni:${KKOTSUNI_POSTGRES_PASSWORD}@db:5432/kkotsuni_db
+      KKOTSUNI_DEV_AUTH: ${KKOTSUNI_DEV_AUTH:-false}
+      KKOTSUNI_SECRET_KEY: ${KKOTSUNI_SECRET_KEY:?Set KKOTSUNI_SECRET_KEY}
+      KKOTSUNI_SECURE_COOKIE: ${KKOTSUNI_SECURE_COOKIE:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health',timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 volumes:
-  mes_data:
+  kkotsuni_postgres:

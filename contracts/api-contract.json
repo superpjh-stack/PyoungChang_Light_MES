@@ -1,0 +1,395 @@
+{
+  "source": "server/src/routes and server/src/app.js; API prefix /api",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/audit-log",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/customers",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/customers",
+      "role": null,
+      "success_status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/customers/{code}",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/customers/{code}",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/customers/{code}/delivery-sites",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/customers/{code}/delivery-sites",
+      "role": null,
+      "success_status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/customers/{code}/prices",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/customers/{code}/prices",
+      "role": null,
+      "success_status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/dashboard/summary",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/erp-sync/customer-prices",
+      "role": "ADMIN",
+      "success_status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/erp-sync/customers",
+      "role": "ADMIN",
+      "success_status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/erp-sync/products",
+      "role": "ADMIN",
+      "success_status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/invoices",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/invoices/erp/send-batch",
+      "role": "OPERATOR",
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/invoices/generate",
+      "role": null,
+      "success_status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/invoices/preview",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/invoices/{invoiceNo}",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/invoices/{invoiceNo}/approval",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/invoices/{invoiceNo}/approve",
+      "role": "OPERATOR",
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/invoices/{invoiceNo}/erp/confirm",
+      "role": "OPERATOR",
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/invoices/{invoiceNo}/erp/import-file",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/invoices/{invoiceNo}/erp/retry",
+      "role": "OPERATOR",
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/invoices/{invoiceNo}/erp/send",
+      "role": "OPERATOR",
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/invoices/{invoiceNo}/export",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/invoices/{invoiceNo}/issue",
+      "role": "OPERATOR",
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/invoices/{invoiceNo}/trace",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/invoices/{invoiceNo}/validate",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/mapping-queue",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/mapping-queue/resolve",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/orders",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/orders/export",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/orders/pending-invoice",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/orders/pending-shipment",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/orders/upload-template",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/orders/upload/commit",
+      "role": null,
+      "success_status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/orders/upload/preview",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderNo}",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/orders/{orderNo}",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/orders/{orderNo}/confirm",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderNo}/status-history",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderNo}/trace",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/orders/{orderNo}/validate",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/product-aliases",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/product-aliases",
+      "role": null,
+      "success_status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/product-aliases/bulk",
+      "role": null,
+      "success_status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/product-aliases/match",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/product-aliases/{id}/use",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/products",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/products",
+      "role": null,
+      "success_status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/products/{code}",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/products/{code}",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/settings/approval-amount-threshold",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/settings/approval-amount-threshold",
+      "role": "ADMIN",
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ship-orders",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/ship-orders/generate",
+      "role": null,
+      "success_status": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/ship-orders/lines/{lineId}",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/ship-orders/lines/{lineId}/results",
+      "role": null,
+      "success_status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/ship-orders/lines/{lineId}/revisions",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ship-orders/{shipOrderNo}",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ship-orders/{shipOrderNo}/export",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/ship-orders/{shipOrderNo}/results",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/users",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/users",
+      "role": null,
+      "success_status": 201
+    }
+  ]
+}

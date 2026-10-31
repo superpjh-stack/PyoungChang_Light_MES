@@ -249,3 +249,13 @@
 - 2026-09-30 | R1-F-12 | 권한별 승인 프로세스(거래처별/금액기준 승인, 미승인 시 ERP전송 차단) | 604e7ff
 - 2026-09-30 | R1-I-01 | ERP→MES 마스터 동기화(수동 Import 스텁, upsert, 감사로그) | 217e708
 - 2026-09-30 | — | **요구사항정의서 전체 완료**: 기능 12개(R1-F-01~12) + 인터페이스 5개(R1-I-01~05) + 비기능 10개(R1-N-01~10), 총 135개 테스트 통과 | —
+
+
+## 2026-10-31 가이드 기반 Python/PostgreSQL 이관
+
+- 사용자 승인 설계에 따라 src/kkotsuni에 FastAPI/Jinja2/PostgreSQL 17 구조로 기존 주문·출고·명세서 업무 이관.
+- 원 Node/React 소스·기존 미커밋 인쇄 변경·SQLite 데이터 보존. 새 기본 Docker와 legacy Docker 구성을 분리.
+- 최종 make gate: Ruff·65개 API 경로 계약·pytest 115건 통과(22.87초).
+- 실제 Chromium 1440/1024/390px 33페이지, 폼 등록·발행·4페이지 A4 명세서 확인.
+- SQLite 이관은 읽기 전용 dry-run 기본, 실제 합성 이관·롤백·재실행·동시성 테스트 통과. 운영 데이터 이관/배포는 미실행.
+- 근거: docs/refactoring/verification.md, contracts/test-coverage.md, decisions.md. 제조 AI 47화면/ML/RAG는 별도 정본 미확보 범위.

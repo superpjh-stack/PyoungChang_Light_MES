@@ -1,0 +1,15 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.legacy
+    image: pyoungchang-light-mes:latest
+    container_name: pyoungchang-light-mes
+    restart: unless-stopped
+    ports:
+      - "8514:4000"
+    volumes:
+      - mes_data:/app/data
+
+volumes:
+  mes_data:

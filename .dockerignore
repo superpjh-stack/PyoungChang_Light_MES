@@ -10,3 +10,14 @@ server/data.sqlite3-shm
 .claude
 docs
 *.md
+
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+.env*
+artifacts
+tests
+develop
+client
+server
