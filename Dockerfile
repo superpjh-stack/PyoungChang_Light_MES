@@ -5,7 +5,7 @@ COPY pyproject.toml uv.lock ./
 COPY src ./src
 RUN uv sync --frozen --no-dev --no-editable
 COPY tools ./tools
-RUN useradd --create-home --uid 10001 mes
+RUN useradd --create-home --uid 10001 mes && chmod -R a+rX /app/src /app/tools
 USER mes
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1
 EXPOSE 8000
