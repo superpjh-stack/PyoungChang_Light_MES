@@ -265,3 +265,10 @@
 - 운영 로그인 게이트, 해시 비밀번호, DB 세션 만료/폐기, CSRF, 로그인 실패 제한, 관리자 사용자 관리 적용. 최초 계정은 서버 대화형 CLI로 등록.
 - 대시보드: 기간별 KPI, 수주 기준 문서 연결 흐름, 일별 문서 추이, 수주 상태, 거래처별 금액, 대기 업무 및 ERP 상태.
 - 120개 테스트 통과. 중복 품목으로 수주 건수가 부풀려지지 않는지, 취소 제외, 초안/발행 금액 분리, 빈 데이터, 세션/권한/로그아웃 재사용 차단 검증.
+
+## 2026-11-01 — Vendor source data and shipping forms
+- Added authenticated admin source-file intake (XLSX/XLS/CP949 CSV), private original storage, provenance, repeat-file deduplication, source identity linking, and review pages.
+- Product-only catalogue import preserves existing conflicts; missing tax classification must be confirmed before invoice generation/issuance.
+- Order records with verified mandatory values remain RECEIVED. Parcel quantities, missing dates and combined products stay in review; historical tracking does not trigger shipping or invoicing.
+- Added original-layout shipping-request print/XLSX and postal-column export, plus dashboard source totals. Production journals and handwritten recipes are excluded as agreed.
+- Validation: 127 tests passed; original source files remain outside Git. Production import results are recorded in the application's source intake history.

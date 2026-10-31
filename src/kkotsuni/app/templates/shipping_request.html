@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% block content %}
+<section class="card"><h2 style="text-align:center">출고 요청서 (택배취합)</h2>
+<table><tr><th>출고일자</th><td>{{ document.ship_date }}</td><th>출고자</th><td></td></tr><tr><th>작성일자</th><td></td><th>작성자</th><td>{{ current_user.name }}</td></tr><tr><th>거래처명</th><td>{{ document.customer_name }}</td><th>구분</th><td>{{ document.ship_method or '' }}</td></tr></table>
+<table><thead><tr><th>NO.</th><th>품명 (원산지표기)</th><th>규격</th><th>수량(ea)</th><th>합계 kg</th><th>비고</th><th>제조일자</th></tr></thead><tbody>{% for line in document.lines %}<tr><td>{{ loop.index }}</td><td>{{ line.product_name }}</td><td>{{ line.product_spec or '' }}</td><td>{{ line.instructed_qty }}</td><td></td><td>{{ line.note or '' }}</td><td></td></tr>{% endfor %}</tbody></table>
+<p>평창올푸드㈜ by 평창꽃순이</p><p class="muted">제조일자·원산지·총중량은 확인된 값만 기재하세요.</p><button onclick="window.print()" class="no-print">인쇄 / PDF 저장</button></section>
+{% endblock %}

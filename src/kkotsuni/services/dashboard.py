@@ -89,7 +89,11 @@ def overview(db, query):
            WHERE d.order_no=o.order_no AND product_code IS NULL))
         ORDER BY CASE WHEN o.status IN ('CONFIRMED','SHIP_ORDERED') AND o.ship_due_date<%s THEN 0 ELSE 1 END,
         o.ship_due_date,o.order_no LIMIT 8''',(end,end))
-    return {'start':start,'end':end,'days':days,'orders':{**orders,**amounts},'shipments':shipments,
+    source = db.one('''SELECT count(DISTINCT file_id) AS files,
+      count(*) FILTER (WHERE status='검토 필요') AS review,
+      count(DISTINCT NULLIF(payload->>'tracking_no','')) AS parcels,
+      count(DISTINCT order_no) AS orders FROM source_record''')
+    return {'source':source,'start':start,'end':end,'days':days,'orders':{**orders,**amounts},'shipments':shipments,
             'invoices':invoices,'flow':flow,'daily':daily,'series':series,'chart_max':max_value,
             'statuses':statuses,'top_customers':top,'pending':pending,'attention':attention,
             'erp':[{'label':label,'count':erp.get(code,0)} for code,label in

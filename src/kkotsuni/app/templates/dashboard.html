@@ -2,6 +2,7 @@
 {% macro n(value) %}{{ '{:,.0f}'.format(value or 0) }}{% endmacro %}
 {% block content %}{% set d = dashboard %}
 <div class="dashboard">
+{% if d.source.files %}<section class="card"><h2>원본 업무자료 반영 현황</h2><p>전체 기간 · {{ n(d.source.files) }}개 데이터 파일 · 연결 수주 {{ n(d.source.orders) }}건 · 원본 송장 {{ n(d.source.parcels) }}개 · 검토 필요 {{ n(d.source.review) }}행</p><p class="muted">송장 수는 원본 배송 근거이며 제품 출고수량·신규 출고지시와 별도로 집계합니다.</p>{% if current_user and current_user.role=='ADMIN' %}<a href="/source-data">가져오기 결과와 검토 목록 보기 →</a>{% endif %}</section>{% endif %}
 <form method="get" class="dashboard-filter"><div><strong>수주부터 거래까지, 오늘의 업무 흐름</strong><p>{{ d.start }} — {{ d.end }} · 조회 기간 기준</p></div><label>기준일<input type="date" name="date" value="{{ d.end }}" required></label><label>기간<select name="days">{% for days in [7,14,30,90] %}<option value="{{ days }}" {% if days == d.days %}selected{% endif %}>최근 {{ days }}일</option>{% endfor %}</select></label><button>조회</button></form>
 {% if d.orders.test_count %}<p class="dashboard-note">조회 기간 수주에 테스트 데이터 {{ n(d.orders.test_count) }}건이 포함되어 있습니다.</p>{% endif %}
 <div class="kpi-grid">

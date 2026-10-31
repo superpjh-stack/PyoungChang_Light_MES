@@ -48,6 +48,9 @@ def preview(db, data):
                 failure = "출고 실적이 없어 청구 수량을 확정할 수 없습니다"
                 break
             p = repo.require(db, "product", "product_code", line["product_code"])
+            if p['tax_review_required']:
+                failure = '원본 품목의 과세구분을 제품 마스터에서 확인해야 합니다'
+                break
             price, source = line["unit_price"], "ORDER"
             if price is None:
                 current = db.one(
@@ -138,6 +141,9 @@ def validate(db, no):
     # Multiple lines may contain the same product: compare grouped quantities once.
     invoiced = defaultdict(Decimal)
     for line in invoice["lines"]:
+        pending_tax = db.one('SELECT tax_review_required FROM product WHERE product_code=%s',(line['product_code'],))
+        if pending_tax and pending_tax['tax_review_required']:
+            mismatches.append({'product_code':line['product_code'],'reason':'원본 품목의 과세구분 확인 후 제품 마스터에서 저장하세요'})
         invoiced[(line["order_no"], line["product_code"])] += line["quantity"]
     for (order_no, product), qty in invoiced.items():
         rows = db.q("SELECT line_no FROM order_dtl WHERE order_no=%s AND product_code=%s", (order_no, product))

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}{% block content %}
+{% if files is defined %}
+<section class="card"><h2>업체별 원본 자료 등록</h2><p>품목코드·발주서·송장·출고요청서 파일을 등록합니다. 같은 파일은 한 번만 처리하며, 필수값이 부족한 행은 검토 목록에 보관합니다.</p>
+<p>과거 송장은 배송 근거로 보관합니다. 수주 등록은 접수 상태이며, 자동 출고·거래명세서 발행은 하지 않습니다.</p>
+<form action="/source-data/upload" method="post" enctype="multipart/form-data"><input type="hidden" name="_csrf" value="{{ csrf }}"><label>원본 파일 <input type="file" name="file" accept=".xlsx,.xls,.csv" required></label><button>자료 등록</button></form></section>
+<section class="card"><h2>가져오기 이력</h2><div class="table-wrap"><table><thead><tr><th>파일</th><th>원본 행</th><th>등록·연결</th><th>검토 필요</th><th>중복</th><th>범위 제외</th></tr></thead><tbody>{% for f in files %}<tr><td><a href="/source-data/{{ f.id }}">{{ f.filename }}</a></td><td>{{ f.rows }}</td><td>{{ f.imported }}</td><td>{{ f.review }}</td><td>{{ f.duplicates }}</td><td>{{ f.excluded }}</td></tr>{% endfor %}</tbody></table></div></section>
+{% elif record is defined %}
+<section class="card"><p>{{ record.sheet }} / {{ record.row_number }}행 · {{ record.issue or record.status }}</p>
+{% if record.status=='검토 필요' and record.kind!='품목' %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf }}">
+{% for name,label in [('customer_name','거래처명'),('order_date','주문일'),('ship_due_date','출고예정일'),('raw_product_name','제품명'),('quantity','제품 수량'),('quantity_kind','수량 기준 (제품 또는 박스)')] %}<label class="form-field">{{ label }}<input name="{{ name }}" value="{{ record.payload.get(name,'') }}" {% if 'date' in name %}type="date"{% endif %} required></label>{% endfor %}<p>제품별 수량이 확인된 단일 품목만 등록하세요. 여러 제품이 묶인 자료는 원본을 보완해 다시 등록하세요.</p><button>보완 후 등록</button></form>{% endif %}
+<h2>원본 값</h2><dl>{% for k,v in record.payload.items() if k!='raw' %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}</dl><a href="/source-data/{{ record.file_id }}">자료 목록</a></section>
+{% else %}
+<section class="card"><a href="/source-data">전체 가져오기 이력</a> · <a href="/source-data/{{ file.id }}/original">원본 다운로드</a> · <a href="/source-data/{{ file.id }}/postal.xlsx">우체국 열 순서로 다운로드</a>
+<p>원본의 날짜·수량·송장정보를 보존합니다. 제품 수량과 택배 박스 수량은 구분해서 확인하세요.</p>
+<form method="get"><label>처리 상태 <select name="status"><option value="">전체</option>{% for s in ['등록','기존 연결','검토 필요','중복','범위 제외'] %}<option {% if status==s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></label><button>조회</button></form>
+<div class="table-wrap"><table><thead><tr><th>시트·행</th><th>구분</th><th>거래처 / 품목</th><th>수량</th><th>송장</th><th>처리 결과</th><th>연결</th></tr></thead><tbody>{% for r in records %}<tr><td>{{ r.sheet }} · {{ r.row_number }}</td><td>{{ r.kind }}</td><td>{{ r.payload.get('customer_name','') }}<br>{{ r.payload.get('raw_product_name',r.payload.get('name','')) }}</td><td>{{ r.payload.get('quantity','') }} {{ r.payload.get('quantity_kind','') }}</td><td>{{ r.payload.get('tracking_no','') }}</td><td>{{ r.status }}<br><small>{{ r.issue or '' }}</small></td><td>{% if r.order_no %}<a href="/orders/{{ r.order_no }}">수주</a>{% elif r.product_code %}<a href="/products/{{ r.product_code }}">품목</a>{% endif %} <a href="/source-data/rows/{{ r.id }}/edit">확인</a></td></tr>{% endfor %}</tbody></table></div>
+<p>{% if page>1 %}<a href="?page={{ page-1 }}&status={{ status|urlencode }}">이전</a>{% endif %} {{ page }}페이지 {% if records|length==100 %}<a href="?page={{ page+1 }}&status={{ status|urlencode }}">다음</a>{% endif %}</p></section>
+{% endif %}{% endblock %}

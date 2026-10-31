@@ -56,6 +56,8 @@ def save(db, table, data, code=None):
             raise BusinessError("role은 ADMIN, OPERATOR, VIEWER 중 하나여야 합니다")
     if create:
         return repo.insert(db, table, {key: code, **values})
+    if table == 'product' and 'tax_type' in values:
+        db.x('UPDATE product SET tax_review_required=FALSE WHERE product_code=%s',(code,))
     return repo.update(db, table, key, code, values, FIELDS[table], timestamp=table != "app_user")
 
 

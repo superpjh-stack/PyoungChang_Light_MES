@@ -30,6 +30,8 @@ def create_app(settings=None):
     )
     app.include_router(auth_router)
     app.include_router(api_router)
+    from kkotsuni.app.routers.source_data import router as source_router
+    app.include_router(source_router)
     static = Path(__file__).parent / "static"
     app.mount("/static", StaticFiles(directory=static), name="static")
     from kkotsuni.app.routers.pages import router as pages_router
