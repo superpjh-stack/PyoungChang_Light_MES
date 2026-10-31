@@ -23,7 +23,18 @@ make run
 `make db-migrate`는 버전별 스키마만 적용하며 데이터를 초기화하거나 시드를 넣지 않습니다.
 최초 사용자·거래처·제품은 각 화면에서 등록합니다. 개발 모드에서 사용자 관리로 ADMIN/OPERATOR를 등록하고 공통 계정 선택으로 작업자를 고릅니다.
 
-현재 권한 계약은 기존 R1과 같습니다. 명세서 발행·승인·ERP 작업은 OPERATOR 이상, 승인 임계값·ERP 마스터 동기화는 ADMIN입니다. 나머지 기존 조회·입력은 공개된 경량 MES 계약을 유지합니다. **개발 계정 선택은 정식 인증이 아닙니다.** `KKOTSUNI_DEV_AUTH=false`가 기본이며 이 경우 헤더/세션 계정으로 보호 행위를 수행할 수 없습니다. 운영 인증·전사 권한표는 이번 이관 범위에 포함하지 않았습니다.
+운영 모드(`KKOTSUNI_DEV_AUTH=false`)에서는 로그인 후 업무 화면과 API에 접근할 수 있습니다. 비밀번호는 PBKDF2-SHA256 해시로 저장하며, 세션은 8시간 후 만료되고 로그아웃하면 즉시 폐기됩니다. 로그인 실패 5회 시 해당 계정/IP를 15분간 제한합니다. 사용자 관리는 ADMIN만 접근할 수 있습니다. 기존 명세서 발행·승인·ERP 작업의 역할 검사를 유지합니다.
+
+스키마 적용 후 서버 콘솔에서 최초 계정을 등록합니다. 비밀번호는 대화형 입력으로만 받으며 소스·명령 인자에 저장하지 않습니다. 동일 사용자 ID는 덮어쓰지 않습니다.
+
+```sh
+uv run python tools/create_user.py --username admin --name 관리자 --role ADMIN
+# Docker: docker compose run --rm app python tools/create_user.py --username admin --name 관리자 --role ADMIN
+```
+
+API 쓰기 요청에는 로그인 세션 쿠키와 화면의 `_csrf` 값을 `X-CSRF-Token` 헤더로 함께 전달해야 합니다. `/login`, 정적 파일, `/api/health`만 로그인 없이 접근할 수 있습니다. 외부 운영은 HTTPS 프록시와 `KKOTSUNI_SECURE_COOKIE=true`를 사용하세요. 기존 HTTP 배포에는 아직 HTTPS가 설정되지 않았습니다.
+
+개발용 `KKOTSUNI_DEV_AUTH=true`는 격리된 로컬 테스트에만 사용합니다. 이 모드는 로그인 접근 제한을 우회하며 기존 헤더 기반 테스트 호환성을 유지합니다.
 
 ## Docker 실행
 

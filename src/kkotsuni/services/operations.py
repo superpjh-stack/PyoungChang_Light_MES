@@ -553,3 +553,9 @@ def logs(db, data, query, user):
         + " ORDER BY id DESC LIMIT %s",
         (*params, limit),
     )
+
+
+@operation("GET", "/dashboard/overview")
+def dashboard_overview(db, data, query, user):
+    from kkotsuni.services.dashboard import overview
+    return overview(db, query)

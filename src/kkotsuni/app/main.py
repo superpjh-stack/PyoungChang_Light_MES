@@ -10,6 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
+from kkotsuni.app.auth import AuthenticationMiddleware
+from kkotsuni.app.auth import router as auth_router
 from kkotsuni.app.errors import BusinessError
 from kkotsuni.app.routers.api import router as api_router
 from kkotsuni.app.settings import Settings
@@ -18,12 +20,15 @@ from kkotsuni.app.settings import Settings
 def create_app(settings=None):
     app = FastAPI(title="평창꽃순이 MES", version="0.2.0")
     app.state.settings = settings or Settings()
+    app.add_middleware(AuthenticationMiddleware)
     app.add_middleware(
         SessionMiddleware,
         secret_key=app.state.settings.secret_key,
         https_only=app.state.settings.secure_cookie,
         same_site="lax",
+        max_age=8 * 60 * 60,
     )
+    app.include_router(auth_router)
     app.include_router(api_router)
     static = Path(__file__).parent / "static"
     app.mount("/static", StaticFiles(directory=static), name="static")

@@ -20,3 +20,7 @@
 일자 형식은 실제 달력 날짜로 검증하며 Excel 헤더 순서도 검증한다. 수량·금액은 NUMERIC(24,6)/Decimal을 사용한다. 계산 결과 반올림은 기존 Math.round의 동률 방향을 보존한다. PostgreSQL 날짜/시간은 JSON ISO 문자열로 반환되며 기존 SQLite 시간 문자열의 공백이 `T`로 바뀔 수 있다.
 
 기술 구현 근거: [FastAPI 템플릿](https://fastapi.tiangolo.com/advanced/templates/), [Psycopg 트랜잭션](https://www.psycopg.org/psycopg3/docs/basic/transactions.html). 의존성의 실제 설치 버전은 uv.lock에 고정했다.
+
+## 2026-10-31 운영 로그인 추가
+
+사용자 요청으로 MIG-11의 운영 인증 미구현 상태를 대체한다. 운영 모드에서는 전 화면/API를 서버 세션으로 인증하고 사용자 관리를 ADMIN으로 제한한다. API 쓰기는 CSRF 헤더를 검사한다. 기존 업무 역할 정책은 유지한다. 비밀번호 평문/기본 계정은 저장소에 포함하지 않고 서버 대화형 CLI로 최초 계정을 만든다. 세션은 DB에서 만료·폐기하며 로그인 반복 실패는 DB 기반으로 제한한다.

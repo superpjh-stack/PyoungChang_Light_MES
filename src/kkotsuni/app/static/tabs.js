@@ -32,3 +32,14 @@ document.querySelectorAll('[data-nav-group]').forEach((group) => {
   else if (saved !== null) group.open = saved === 'true';
   group.addEventListener('toggle', () => writePreference(key, String(group.open)));
 });
+document.querySelectorAll('[data-chart-toggle]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const visible = button.getAttribute('aria-pressed') !== 'true';
+    button.setAttribute('aria-pressed', String(visible));
+    document.querySelectorAll('[data-chart-series]').forEach((series) => {
+      if (series.dataset.chartSeries === button.dataset.chartToggle) {
+        series.classList.toggle('is-hidden', !visible);
+      }
+    });
+  });
+});

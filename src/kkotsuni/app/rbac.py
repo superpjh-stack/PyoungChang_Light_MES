@@ -8,7 +8,7 @@ RANK = {"VIEWER": 0, "OPERATOR": 1, "ADMIN": 2}
 
 def get_user(request, db):
     if not request.app.state.settings.dev_auth:
-        return None
+        return getattr(request.state, "auth_user", None)
     ident = request.headers.get("X-User-Id") or request.session.get("user_id")
     return get(db, "app_user", "user_id", ident) if ident else None
 

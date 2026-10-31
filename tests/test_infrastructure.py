@@ -24,8 +24,8 @@ def test_database_unavailable_returns_503_without_connection_details():
         response = client.get("/api/health")
         assert response.status_code == 503
         assert response.json() == {"error": "데이터베이스에 연결할 수 없습니다"}
-        response = client.get("/")
-        assert response.status_code == 503
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 303
         assert "unavailable@" not in response.text
 
 

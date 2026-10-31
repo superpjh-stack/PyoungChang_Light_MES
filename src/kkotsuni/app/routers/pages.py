@@ -91,10 +91,7 @@ def page_context(request, db, path, query=None):
     kind = parts[0]
     code = parts[1] if len(parts) > 1 else None
     if path in ("/", "/dashboard"):
-        ctx["filters"] = ["date"]
-        section("오늘의 업무 현황", read("/dashboard/summary", query))
-        section("미출고 주문", read("/orders/pending-shipment"))
-        section("미발행 주문", read("/orders/pending-invoice"))
+        ctx["dashboard"] = read("/dashboard/overview", query)
     elif kind in ("customers", "products", "users"):
         ctx["title"] = {"customers": "거래처 마스터", "products": "제품 마스터", "users": "사용자 관리"}[kind]
         data = read("/" + kind + ("/" + code if code else ""), query)
@@ -124,6 +121,9 @@ def page_context(request, db, path, query=None):
     elif path == "/orders/upload":
         ctx.update(title="주문 내역서 업로드", upload=True)
         link("표준 템플릿 다운로드", "/downloads/orders/upload-template")
+    elif path in ("/orders/pending-shipment", "/orders/pending-invoice"):
+        ctx["title"] = "출고 대기 수주" if path.endswith("pending-shipment") else "명세서 미발행 수주"
+        section("처리 대기 목록", read(path))
     elif path in ("/mapping", "/mapping-queue"):
         ctx["title"] = "제품 매핑 대기"
         rows = read("/mapping-queue")
@@ -289,6 +289,9 @@ async def action(request: Request, db: Annotated[object, Depends(get_db)]):
     check_csrf(request, data.get("_csrf"))
     target = local_url(data.get("_return"))
     api = local_url(data.get("_path"), "")
+    if not request.app.state.settings.dev_auth and (api == "/users" or api.startswith("/users/")):
+        from kkotsuni.app.rbac import require_action
+        require_action(get_user(request, db), "ADMIN")
     method = data.get("_method", "POST")
     if not api or method not in ("POST", "PUT"):
         raise HTTPException(400, "잘못된 작업입니다.")
@@ -326,7 +329,7 @@ async def action(request: Request, db: Annotated[object, Depends(get_db)]):
         if api == "/orders/upload/preview":
             ctx = page_context(request, db, "/orders/upload")
             ctx["preview"] = result
-            return render(request, "print.html" if ctx.get("print_mode") else "page.html", context=ctx)
+            return render(request, "dashboard.html" if ctx.get("dashboard") else ("print.html" if ctx.get("print_mode") else "page.html"), context=ctx)
         # Preserve detailed partial-success results through PRG without cookie-size limits.
         if isinstance(result, dict) and (
             result.get("errors") or api.endswith("/generate") or api == "/orders/upload/commit"
@@ -370,4 +373,4 @@ def page(request: Request, page_path: str, db: Annotated[object, Depends(get_db)
     result = getattr(request.app.state, "html_results", {}).pop(token, None)
     if result and time.monotonic() - result[0] < 600:
         ctx["sections"].insert(0, {"title": "처리 결과", "data": result[1]})
-    return render(request, "print.html" if ctx.get("print_mode") else "page.html", context=ctx)
+    return render(request, "dashboard.html" if ctx.get("dashboard") else ("print.html" if ctx.get("print_mode") else "page.html"), context=ctx)
