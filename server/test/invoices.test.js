@@ -90,6 +90,21 @@ describe('R1-F-08 거래 명세서 자동 생성', () => {
     expect(invoice.body.total_amount).toBe(418000);
   });
 
+  it('명세서 조회에 출력용 거래처명·제품명이 포함된다', async () => {
+    await shipToCompletion(
+      app,
+      [
+        { order_date: '2026-11-03', customer_code: 'C0012', raw_product_name: '고랭지띄고10kg', quantity: 10, unit_price: 38000, ship_due_date: '2026-11-05' },
+      ],
+      '2026-11-05'
+    );
+    const res = await request(app).post('/api/invoices/generate').send({ invoice_date: '2026-11-05' });
+
+    const invoice = await request(app).get(`/api/invoices/${res.body.invoices[0]}`);
+    expect(invoice.body.customer_name).toBe('○○홈쇼핑');
+    expect(invoice.body.lines[0].product_name).toBe('고랭지 황태김치 10kg');
+  });
+
   it('면세 품목은 세액이 0이고, 단가는 기본단가(default_price)가 적용된다', async () => {
     await shipToCompletion(
       app,

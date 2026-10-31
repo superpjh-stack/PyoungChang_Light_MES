@@ -352,7 +352,7 @@ label.checkbox-label {
   gap: 6px;
 }
 
-/* 출고지시서 미리보기/PDF 출력 화면 */
+/* 출고지시서·거래명세서 미리보기/PDF 출력 화면 */
 .print-page {
   max-width: 800px;
   margin: 24px auto;
@@ -402,6 +402,16 @@ label.checkbox-label {
 }
 .print-line-table td.num {
   text-align: right;
+}
+.print-line-table tfoot td {
+  background: #f5f5f5;
+  font-weight: 600;
+}
+.print-draft-mark {
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-danger);
+  margin: -12px 0 16px;
 }
 .print-footnote {
   font-size: 11px;

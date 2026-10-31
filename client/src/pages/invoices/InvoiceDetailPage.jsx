@@ -89,6 +89,9 @@ export default function InvoiceDetailPage() {
         <span className="spacer" />
         <InvoiceStatusBadge status={invoice.status} />
         <ErpStatusBadge status={invoice.erp_send_status} />
+        <a className="btn" href={`/invoices/${invoiceNo}/print`} target="_blank" rel="noreferrer">
+          미리보기 / PDF 출력
+        </a>
         <button className="btn" onClick={handleExport}>
           엑셀 다운로드
         </button>

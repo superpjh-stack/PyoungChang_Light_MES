@@ -44,9 +44,24 @@ export function createInvoice(db, { invoice_date, customer_code, lines }) {
 }
 
 export function getInvoiceWithLines(db, invoiceNo) {
-  const hdr = db.prepare('SELECT * FROM invoice_hdr WHERE invoice_no = ?').get(invoiceNo);
+  const hdr = db
+    .prepare(
+      `SELECT i.*, c.name AS customer_name, c.biz_reg_no AS customer_biz_reg_no
+       FROM invoice_hdr i
+       JOIN customer c ON c.customer_code = i.customer_code
+       WHERE i.invoice_no = ?`
+    )
+    .get(invoiceNo);
   if (!hdr) return null;
-  hdr.lines = db.prepare('SELECT * FROM invoice_dtl WHERE invoice_no = ? ORDER BY id').all(invoiceNo);
+  hdr.lines = db
+    .prepare(
+      `SELECT d.*, p.name AS product_name
+       FROM invoice_dtl d
+       JOIN product p ON p.product_code = d.product_code
+       WHERE d.invoice_no = ?
+       ORDER BY d.id`
+    )
+    .all(invoiceNo);
   return hdr;
 }
 
