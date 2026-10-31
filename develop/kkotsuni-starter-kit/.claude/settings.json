@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(make check-trace)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./**/.env)",
+      "Read(./cookie.txt)",
+      "Read(./backups/**)",
+      "Edit(./.env)",
+      "Bash(git push:*)",
+      "Bash(rm -rf:*)"
+    ]
+  }
+}
