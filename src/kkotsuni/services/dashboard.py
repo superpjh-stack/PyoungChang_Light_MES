@@ -50,8 +50,8 @@ def overview(db, query):
     max_value = max([max(row['orders'], row['shipments'], row['invoices']) for row in daily] + [2])
     max_value += max_value % 2
     series = []
-    for key, label, color in [('orders', '수주', '#326745'), ('shipments', '출고지시', '#387fa0'),
-                              ('invoices', '거래명세서', '#b17832')]:
+    for key, label, color in [('orders', '수주', '#db2e2e'), ('shipments', '출고지시', '#4c8a4c'),
+                              ('invoices', '거래명세서', '#e8963f')]:
         points = ' '.join(f"{45+index*710/max(days-1,1):.2f},{205-row[key]*165/max_value:.2f}"
                           for index, row in enumerate(daily))
         series.append({'key': key, 'label': label, 'color': color, 'points': points})
