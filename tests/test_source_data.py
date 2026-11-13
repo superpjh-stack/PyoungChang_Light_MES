@@ -111,3 +111,29 @@ def test_admin_only_import_and_exports(client, db):
         w = load_workbook(BytesIO(result.content))
         assert w.active["B2"].value == "12345"
         assert w.active["M1"].value == "우편번호"
+
+
+def test_one_missing_date_is_filled_and_parcel_logs_are_evidence_only(db):
+    # MIG-24: order date missing -> ship date; marked on the order note.
+    row = ROW.copy()
+    row[1] = ""
+    ingest(db, source([HEAD, row]), "거래처 발주서.xlsx")
+    order = db.one("SELECT order_date,ship_due_date,note FROM order_hdr")
+    assert str(order["order_date"]) == str(order["ship_due_date"]) == "2026-10-12"
+    assert "[날짜 보완: 주문일=출고예정일]" in order["note"]
+    # Ship date missing -> order date.
+    other = ROW.copy()
+    other[2], other[3], other[4], other[8] = "", "external-002", "둘째", ""
+    ingest(db, source([HEAD, other]), "거래처 발주서2.xlsx")
+    assert db.one("SELECT count(*) AS n FROM order_hdr WHERE ship_due_date='2026-10-10'")["n"] == 1
+    # Both dates missing stays in review.
+    none = ROW.copy()
+    none[1], none[2], none[3], none[4], none[8] = "", "", "external-003", "셋째", ""
+    ingest(db, source([HEAD, none]), "거래처 발주서3.xlsx")
+    assert db.one("SELECT count(*) AS n FROM source_record WHERE status='검토 필요'")["n"] == 1
+    # A parcel log never creates an order: matching tracking links, unknown tracking is excluded.
+    log = [HEAD, ["", "", "2026-10-12", "", "수령인", "", "김치", 1, "12345"], ["", "", "2026-10-12", "", "남", "", "김치", 1, "99999"]]
+    ingest(db, source(log), "1012출고.xlsx")
+    assert db.one("SELECT count(*) AS n FROM order_hdr")["n"] == 2
+    rows = db.q("SELECT status,order_no FROM source_record r JOIN source_file f ON f.id=r.file_id WHERE f.filename='1012출고.xlsx' ORDER BY r.id")
+    assert [r["status"] for r in rows] == ["기존 연결", "범위 제외"] and rows[0]["order_no"]

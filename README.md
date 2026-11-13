@@ -54,6 +54,10 @@ docker compose up -d app
 
 localhost:8000만 공개합니다. PostgreSQL은 전용 볼륨 `kkotsuni_postgres`를 사용하며 기존 `mes_data` SQLite 볼륨과 분리됩니다. DB 준비 명령을 앱 시작 시 자동 실행하지 않습니다. 실제 운영 배포는 수행하지 않았습니다.
 
+## 샘플 삭제와 원본 자료 연계
+
+`tools/curate_real_data.py`는 원본 자료 근거가 없는 샘플 수주·출고·명세서와 그 마스터를 지우고, 검토 행을 현재 규칙으로 다시 처리한 뒤 송장번호가 있는 수주를 출고완료까지 연결합니다. 기본은 dry-run(실행 후 되돌림)이고 `--apply`를 붙여야 반영됩니다. 삭제는 되돌릴 수 없으니 먼저 DB를 백업하세요.
+
 ## 기존 데이터 이관
 
 [이관 실행 안내](docs/refactoring/migration-runbook.md)를 먼저 확인하세요.

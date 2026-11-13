@@ -9,7 +9,7 @@ from psycopg.types.json import Jsonb
 from kkotsuni.app.errors import BusinessError
 from kkotsuni.db import repositories as repo
 from kkotsuni.integrations.excel import COLUMNS
-from kkotsuni.integrations.source_files import key, parse
+from kkotsuni.integrations.source_files import evidence_only, key, parse
 from kkotsuni.services import matching, orders
 
 
@@ -70,6 +70,31 @@ def apply_record(db, record):
             ),
         )
         return
+    filename = db.one("SELECT filename FROM source_file WHERE id=%s", (record["file_id"],))["filename"]
+    if evidence_only(filename):
+        # MIG-24: a parcel log only backs an order that already carries the same tracking number.
+        order = v.get("tracking_no") and db.one(
+            """SELECT order_no FROM source_record WHERE id<>%s AND order_no IS NOT NULL
+               AND payload->>'tracking_no'=%s ORDER BY id LIMIT 1""",
+            (ident, v["tracking_no"]),
+        )
+        if order:
+            db.x(
+                "UPDATE source_record SET status='기존 연결',order_no=%s,issue='송장번호가 일치하는 수주의 배송 근거' WHERE id=%s",
+                (order["order_no"], ident),
+            )
+        else:
+            db.x(
+                "UPDATE source_record SET status='범위 제외',issue='배송 이력 자료: 송장번호가 일치하는 수주가 없어 수주로 등록하지 않음' WHERE id=%s",
+                (ident,),
+            )
+        return
+    # MIG-24: one missing date is taken from the other date on the same row and marked on the order note.
+    filled = ""
+    if not v.get("order_date") and v.get("ship_due_date"):
+        v, filled = {**v, "order_date": v["ship_due_date"]}, "주문일=출고예정일"
+    elif not v.get("ship_due_date") and v.get("order_date"):
+        v, filled = {**v, "ship_due_date": v["order_date"]}, "출고예정일=주문일"
     tokens = identities(v)
     related = set()
     for token in tokens:
@@ -150,7 +175,7 @@ def apply_record(db, record):
             link_evidence(no)
             return
     values = {k: v.get(k) or None for k, _ in COLUMNS}
-    values.update(customer_code=code, quantity=str(qty), note=(v.get("note", "") + f" [원본행 #{ident}]").strip())
+    values.update(customer_code=code, quantity=str(qty), note=" ".join(filter(None, [v.get("note", ""), f"[날짜 보완: {filled}]" if filled else "", f"[원본행 #{ident}]"])))
     validation = orders.row_errors(db, values)
     if validation:
         db.x("UPDATE source_record SET issue=%s WHERE id=%s", ("; ".join(e["reason"] for e in validation), ident))

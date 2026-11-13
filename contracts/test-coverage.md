@@ -58,3 +58,5 @@ uv run pytest tests/test_api.py tests/test_workflow.py tests/test_legacy_cases.p
 2026-11-13 MIG-23: `test_shipping_request_pdf_uses_company_layout_and_paginates` 추가 — 양식 항목·작성자·작성일자 표시, 21행 단위 쪽 나눔, 미로그인 401, VIEWER 다운로드, 없는 출고지시 404, 상세·양식 화면의 PDF 링크. `make gate`: ruff 통과, 계약 74건, 테스트 138건 통과.
 
 2026-11-13 대시보드: `test_dashboard_shows_mapping_backlog_recent_notes_and_setup_gaps` 추가 — 매핑 대기 표기명·줄 수와 상위 목록, 최근 Note, 과세구분 확인 제품 수, 공급자 등록번호 미입력 안내, 조회 기간 밖 수주 안내. `make gate`: ruff 통과, 계약 74건, 테스트 139건 통과.
+
+2026-11-13 MIG-24: `test_one_missing_date_is_filled_and_parcel_logs_are_evidence_only` 추가 — 주문일/출고예정일 한쪽 보완과 비고 표시, 둘 다 없으면 검토 유지, 송장 이력 파일은 수주를 만들지 않고 송장번호 일치 시 연결·불일치 시 범위 제외. `make gate`: ruff 통과, 계약 74건, 테스트 140건 통과. `tools/curate_real_data.py`는 로컬 DB에서 dry-run과 실제 적용 결과가 같은 것을 확인했다.

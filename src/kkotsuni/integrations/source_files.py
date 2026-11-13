@@ -93,6 +93,14 @@ ALIASES = {
 }
 
 
+# Parcel logs (post-office lists) prove a delivery but are not orders: no order number, date or product quantity.
+EVIDENCE_FILES = ("택배 양식", "1012출고")
+
+
+def evidence_only(filename):
+    return any(mark in text(filename) for mark in EVIDENCE_FILES)
+
+
 def sheets(content, filename):
     suffix = filename.rsplit(".", 1)[-1].lower()
     if suffix == "csv":
