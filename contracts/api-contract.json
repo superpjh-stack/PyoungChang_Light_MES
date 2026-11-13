@@ -124,7 +124,7 @@
     {
       "method": "POST",
       "path": "/invoices/{invoiceNo}/approve",
-      "role": "OPERATOR",
+      "role": "ADMIN",
       "success_status": 200
     },
     {
@@ -390,6 +390,30 @@
       "path": "/users",
       "role": null,
       "success_status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/users/{code}",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/users/{code}",
+      "role": "ADMIN",
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/users/{code}/password",
+      "role": "ADMIN",
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/users/{code}/status",
+      "role": "ADMIN",
+      "success_status": 200
     }
   ]
 }

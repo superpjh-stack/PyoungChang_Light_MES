@@ -11,7 +11,7 @@ from kkotsuni.app.rbac import require_action, require_screen, require_write
 from kkotsuni.db import repositories as repo
 from kkotsuni.integrations import excel
 from kkotsuni.schemas.input import scalar_record
-from kkotsuni.services import erp, invoices, masters, matching, orders, reporting, shipping
+from kkotsuni.services import accounts, erp, invoices, masters, matching, orders, reporting, shipping
 from kkotsuni.services.common import audit, day, required
 
 
@@ -98,6 +98,9 @@ def health(db, data, query, user):
 
 # Master's object boundaries are explicitly whitelisted here, never supplied as SQL names by a client.
 def master_routes(path, table, key):
+    if table == "app_user":
+        return
+
     @operation("GET", path)
     def lists(db, data, query, user):
         if table == "customer" and query.get("missingErpMapping") == "true":
@@ -109,9 +112,6 @@ def master_routes(path, table, key):
     @operation("POST", path, 201)
     def create(db, data, query, user):
         return masters.save(db, table, data)
-
-    if table == "app_user":
-        return
 
     @operation("GET", path + "/{code}")
     def detail(db, data, query, user, code):
@@ -125,7 +125,45 @@ def master_routes(path, table, key):
 
 master_routes("/customers", "customer", "customer_code")
 master_routes("/products", "product", "product_code")
-master_routes("/users", "app_user", "user_id")
+
+
+# Users: login accounts are administered here; passwords are hashed and never returned or audited.
+@operation("GET", "/users")
+def users(db, data, query, user):
+    return accounts.listing(db)
+
+
+@operation("POST", "/users", 201)
+def user_create(db, data, query, user):
+    result = accounts.create(db, data)
+    audit(db, "USER", result["user_id"], "USER_CREATE", user, result["role"])
+    return result
+
+
+@operation("GET", "/users/{code}")
+def user_detail(db, data, query, user, code):
+    return accounts.detail(db, code)
+
+
+@operation("PUT", "/users/{code}", role="ADMIN")
+def user_change(db, data, query, user, code):
+    result = accounts.change(db, code, data, user)
+    audit(db, "USER", code, "USER_CHANGE", user, result["role"])
+    return result
+
+
+@operation("POST", "/users/{code}/password", role="ADMIN")
+def user_password(db, data, query, user, code):
+    accounts.set_password(db, code, data.get("password"))
+    audit(db, "USER", code, "PASSWORD_RESET", user)
+    return accounts.detail(db, code)
+
+
+@operation("POST", "/users/{code}/status", role="ADMIN")
+def user_status(db, data, query, user, code):
+    result = accounts.set_enabled(db, code, data.get("enabled"), user)
+    audit(db, "USER", code, "ACCOUNT_ENABLE" if result["enabled"] else "ACCOUNT_DISABLE", user)
+    return result
 
 
 @operation("GET", "/customers/{code}/delivery-sites")
@@ -416,7 +454,7 @@ def invoice_issue(db, data, query, user, no):
     return result
 
 
-@operation("POST", "/invoices/{no}/approve", role="OPERATOR")
+@operation("POST", "/invoices/{no}/approve", role="ADMIN")
 def invoice_approve(db, data, query, user, no):
     result = invoices.approve(db, no, user["user_id"])
     audit(db, "INVOICE", no, "INVOICE_APPROVE", user)

@@ -20,8 +20,14 @@
 | /customers/{customerCode} | 거래처 수정·납품처·단가 | R1-F-04 |
 | /products | 제품 목록·등록 | R1-F-04 |
 | /products/{productCode} | 제품 수정·거래처 별칭 | R1-F-03/04 |
-| /users | 사용자 등록·목록 | R1-N-06 |
+| /orders/pending-shipment | 출고 대기 수주(메뉴: 출고관리) | R1-F-10 |
+| /orders/pending-invoice | 명세서 미발행 수주(메뉴: 거래관리) | R1-F-10 |
+| /users | 사용자 등록(비밀번호 포함)·목록, ADMIN | R1-N-06 |
+| /users/{userId} | 이름·역할 변경, 비밀번호 재설정, 사용 여부, ADMIN | R1-N-06 |
+| /account/password | 본인 비밀번호 변경(운영 로그인 모드) | R1-N-06 |
 | /settings | 승인 임계값·ERP 마스터 CSV | R1-F-12/R1-I-01 |
 | /audit-log | 감사 로그 조회 | R1-N-07 |
 
 HTML 쓰기는 `/actions`에서 CSRF 검사 후 공통 업무 서비스를 호출한다. 성공 303, 입력 실패는 입력값을 유지하는 오류 화면으로 응답한다. 스타터킷의 D-27 원 계약은 없으므로 오류 시 303+팝업과 완전히 동일하다고 주장하지 않는다. 공통 flash와 tabs.js를 사용한다.
+
+역할별 메뉴: 원본 자료 가져오기·사용자·설정·감사 로그는 ADMIN, 주문 업로드는 OPERATOR 이상에게만 보인다. 메뉴와 별개로 서버가 쓰기 권한을 검사한다. VIEWER의 쓰기는 403, 사용자 관리 쓰기·거래처/제품 마스터 등록·수정·명세서 승인은 ADMIN이다(decisions MIG-13~20).

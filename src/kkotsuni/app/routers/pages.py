@@ -28,13 +28,14 @@ NUMBERS = {
     "delivery_site_id",
     "value",
 }
-BOOLS = {"approval_required", "split_by_delivery_site", "success"}
+BOOLS = {"approval_required", "split_by_delivery_site", "success", "enabled"}
 OPTIONS = {
     "role": ["VIEWER", "OPERATOR", "ADMIN"],
     "tax_type": ["TAXABLE", "EXEMPT"],
     "approval_required": ["false", "true"],
     "split_by_delivery_site": ["false", "true"],
     "success": ["true", "false"],
+    "enabled": ["true", "false"],
 }
 
 
@@ -49,8 +50,10 @@ def form(title, path, fields="", values=None, method="POST", hidden=None):
             {
                 "name": k.rstrip("*"),
                 "required": k.endswith("*"),
-                "value": values.get(k.rstrip("*"), ""),
-                "type": "date"
+                "value": "" if k.rstrip("*") == "password" else values.get(k.rstrip("*"), ""),
+                "type": "password"
+                if k.rstrip("*") == "password"
+                else "date"
                 if "date" in k or k.rstrip("*") == "effective_from"
                 else "number"
                 if k.rstrip("*") in NUMBERS
@@ -99,10 +102,10 @@ def page_context(request, db, path, query=None):
         fields = {
             "customers": "customer_code* name* biz_reg_no erp_customer_code contact_name contact_phone approval_required",
             "products": "product_code* name* spec unit tax_type erp_item_code pack_unit pack_size default_price",
-            "users": "user_id* name* role",
+            "users": "user_id* name* role password*",
         }[kind]
         if code:
-            fields = " ".join(fields.split()[1:])
+            fields = "name* role" if kind == "users" else " ".join(fields.split()[1:])
         add(
             "변경 저장" if code else "새로 등록",
             "/" + kind + ("/" + code if code else ""),
@@ -112,6 +115,10 @@ def page_context(request, db, path, query=None):
         )
         if kind == "customers" and not code:
             ctx["filters"] = ["missingErpMapping"]
+        if kind == "users" and code:
+            add("비밀번호 재설정", path + "/password", "password*")
+            add("계정 사용 여부 저장", path + "/status", "enabled", {"enabled": data.get("enabled")})
+            ctx["notice"] = "비밀번호를 재설정하거나 사용 중지하면 그 사용자의 로그인 세션이 모두 종료됩니다."
         if code and kind == "customers":
             add("납품처 추가", path + "/delivery-sites", "site_name* address receiver_name receiver_phone")
             add("단가 추가", path + "/prices", "product_code* unit_price* effective_from")
@@ -330,7 +337,7 @@ async def action(request: Request, db: Annotated[object, Depends(get_db)]):
         result = invoke(db, method, api, data=payload, user=get_user(request, db))
         if api == "/orders/upload/preview":
             ctx = page_context(request, db, "/orders/upload")
-            ctx["preview"] = result
+            ctx.update(preview=result, return_url="/orders/upload")
             return render(request, "dashboard.html" if ctx.get("dashboard") else ("print.html" if ctx.get("print_mode") else "page.html"), context=ctx)
         # Preserve detailed partial-success results through PRG without cookie-size limits.
         if isinstance(result, dict) and (
@@ -362,7 +369,7 @@ async def action(request: Request, db: Annotated[object, Depends(get_db)]):
         ):
             raise
         ctx = page_context(request, db, urlsplit(target).path)
-        ctx.update(error=str(exc), details=getattr(exc, "details", None), submitted=dict(data), failed_path=api)
+        ctx.update(return_url=target, error=str(exc), details=getattr(exc, "details", None), submitted=dict(data), failed_path=api)
         if api == "/orders/upload/commit":
             ctx["preview"] = {"rows": rows if isinstance(rows, list) else []}
         return render(request, context=ctx, status_code=getattr(exc, "status", getattr(exc, "status_code", 400)))

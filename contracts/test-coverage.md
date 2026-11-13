@@ -44,3 +44,9 @@ uv run pytest tests/test_api.py tests/test_workflow.py tests/test_legacy_cases.p
 추가 누락 사례 보완: `tests/test_regression_gaps.py`의 **24개 테스트 통과, 3.61초**를 같은 PostgreSQL 환경에서 확인했다. ERP 미매핑/재동기화, 별칭 bulk·필터·추천·5종 정규화, 주문 필터·Excel 상세·상태 이력, 출고 제품 필터 잔여분·포장 환산·수정 이력, 납품처별 명세서, 승인 임계값 해제, CSV 컬럼, 대시보드 주간 경계·지연·ERP 집계, CHECK 롤백을 포함한다. 역순 날짜 배치 동시 업로드 8건의 채번·완료, 잘못된 자료형 그룹 격리, 발행 후 원 출고 수량 변경 차단도 통과했다. CSV 숫자는 Decimal 값으로 대조하며 정수 단가가 `100.000000` 대신 기존 `100`으로 출력되는 계약도 검사한다.
 
 최종 통합 게이트는 115건 통과했으며 성능·브라우저·컨테이너 검증 결과는 [검증 기록](../docs/refactoring/verification.md)에 정리했다.
+
+## 사용자별 시나리오 검토 반영 (2026-11-01)
+
+`tests/test_access_and_accounts.py` 6건: 오류 화면 재저장 시 원래 화면 복귀, 관리자 계정 생성·비밀번호 재설정·역할 변경·사용 중지와 세션 폐기·본인 보호, 본인 비밀번호 변경(현재 세션 유지·다른 세션 폐기), VIEWER 쓰기 403·사용자 쓰기 ADMIN, 역할별 메뉴·HTML 403·현재 메뉴 1개 활성, 예/아니오·영문 열 이름 표시. 기존 승인 테스트 3곳은 승인 ADMIN 정책(MIG-17)에 맞게 OPERATOR 403 → ADMIN 성공으로 바꿨다. `make gate`: ruff 통과, 계약 69건, 테스트 133건 통과(로컬 전용 테스트 DB `kkotsuni_test`의 임시 스키마).
+
+2026-11-02 MIG-20: `test_master_data_writes_are_admin_only` 추가 — 거래처·납품처·거래처 단가·제품 등록/수정 6개 API가 OPERATOR 403·ADMIN 성공, 조회와 별칭 등록은 OPERATOR 허용. `make gate`: ruff 통과, 계약 69건, 테스트 135건 통과.

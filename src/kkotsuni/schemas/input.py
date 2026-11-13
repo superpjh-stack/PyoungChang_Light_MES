@@ -16,7 +16,7 @@ NUMERIC = {
     "value",
     "limit",
 }
-BOOLEAN = {"approval_required", "is_default", "split_by_delivery_site", "success"}
+BOOLEAN = {"approval_required", "is_default", "split_by_delivery_site", "success", "enabled"}
 
 
 def scalar_record(data):

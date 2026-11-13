@@ -25,7 +25,16 @@ def require_screen(user, screen):
     return None
 
 
+# Master data (customers incl. delivery sites/prices, products) and accounts are ADMIN-maintained (MIG-20).
+ADMIN_WRITES = ("/users", "/customers", "/products")
+
+
 def require_write(user, screen, obj=None):
-    # Existing R1 writes are public except action-gated issuance, ERP and admin settings.
-    # Do not invent the unavailable manufacturing D-26/D-28 permission matrix.
-    return None
+    """R1-N-06: VIEWER is read-only; user and master-data administration is ADMIN only.
+
+    An anonymous caller only exists in explicit development mode (production requires a session),
+    where the legacy anonymous R1 writes stay available for header-compatible tests.
+    """
+    if user is None:
+        return
+    require_action(user, "ADMIN" if screen.startswith(ADMIN_WRITES) else "OPERATOR")

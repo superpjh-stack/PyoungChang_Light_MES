@@ -38,13 +38,15 @@ def test_server_html_escapes_data_and_preserves_form_input():
             "forms": [],
             "links": [],
             "filters": [],
+            "current_user": {"user_id": "op", "name": "운영", "role": "OPERATOR"},
         },
     )
     html = response.body.decode()
     assert "&lt;script&gt;" in html
     assert "<script>bad()" not in html
     assert "/customers/C1" in html
-    assert "주문 업로드" in html
+    assert "주문 업로드" in html and "출고 대기" in html and "명세서 미발행" in html
+    assert 'href="/users"' not in html and "원본 자료 가져오기" not in html
 
 
 def test_templates_render_nested_rows_and_empty_state():
@@ -155,7 +157,12 @@ def test_html_complete_order_shipping_invoice_workflow(client):
         == 303
     )
     invoice = client.get("/api/invoices").json()[0]["invoice_no"]
-    for operation in ("approve", "issue", "erp/send"):
+    denied = html_action(client, token, f"/invoices/{invoice}/approve", f"/invoices/{invoice}")
+    assert denied.status_code == 403 and "ADMIN" in denied.text
+    client.post("/dev/account", data={"_csrf": token, "user_id": "admin1", "_return": "/"})
+    assert html_action(client, token, f"/invoices/{invoice}/approve", f"/invoices/{invoice}").status_code == 303
+    client.post("/dev/account", data={"_csrf": token, "user_id": "op1", "_return": "/"})
+    for operation in ("issue", "erp/send"):
         result = html_action(client, token, f"/invoices/{invoice}/{operation}", f"/invoices/{invoice}")
         assert result.status_code == 303, result.text
     result = html_action(

@@ -203,7 +203,7 @@ def test_approval_not_required_and_csv_columns_match_invoice(client):
     assert detail['customer_name'] == '거래처'
     assert detail['lines'][0]['product_name'] == '배추김치 10kg'
     ok(client.post(f'/api/invoices/{number}/issue', headers=OP))
-    assert client.post(f'/api/invoices/{number}/approve', headers=OP).status_code == 400
+    assert client.post(f'/api/invoices/{number}/approve', headers=ADMIN).status_code == 400
     ok(client.post(f'/api/invoices/{number}/erp/send', headers=OP))
     result = client.get(f'/api/invoices/{number}/erp/import-file')
     assert result.status_code == 200

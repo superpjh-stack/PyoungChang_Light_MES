@@ -272,3 +272,11 @@
 - Order records with verified mandatory values remain RECEIVED. Parcel quantities, missing dates and combined products stay in review; historical tracking does not trigger shipping or invoicing.
 - Added original-layout shipping-request print/XLSX and postal-column export, plus dashboard source totals. Production journals and handwritten recipes are excluded as agreed.
 - Validation: 127 tests passed; original source files remain outside Git. Production import results are recorded in the application's source intake history.
+
+## 2026-11-01 — 사용자별 시나리오 검토 결과 7건 수정
+- 오류 화면 재저장 경로, 사용자 비밀번호·역할·사용 중지·본인 비밀번호 변경, VIEWER 조회 전용, 역할별 메뉴·HTML 403, 승인 ADMIN 전용, 출고 대기·명세서 미발행 메뉴, 한글 표시값.
+- 검증: make gate(ruff·계약 69건·pytest 133건) 통과. 결정 MIG-13~19. 사용자별 시나리오 PDF를 새 화면으로 다시 찍어 갱신.
+
+## 2026-11-02 — 거래처·제품 마스터 쓰기 ADMIN 전용
+- 거래처(납품처·단가 포함)·제품 등록·수정을 ADMIN으로 제한(MIG-20). 조회와 제품 별칭은 기존대로.
+- 검증: make gate(ruff·계약 69건·pytest 135건) 통과. 사용자별 시나리오 문구 갱신.

@@ -94,10 +94,12 @@ def test_full_workflow_actual_quantity_trace_approval_erp_and_audit(client):
     ok(client.post(f'/api/invoices/{number}/issue', headers=OP))
     assert client.post(f'/api/invoices/{number}/issue', headers=OP).status_code == 409
     assert client.post(f'/api/invoices/{number}/erp/send', headers=OP).status_code == 409
-    approval = ok(client.post(f'/api/invoices/{number}/approve', headers=OP))
+    # Approval is a separate approver step: OPERATOR cannot approve (R1-F-12 담당자 승인).
+    assert client.post(f'/api/invoices/{number}/approve', headers=OP).status_code == 403
+    approval = ok(client.post(f'/api/invoices/{number}/approve', headers=ADMIN))
     assert approval['approved'] is True
-    assert approval['history'][0]['user_id'] == 'op1'
-    assert client.post(f'/api/invoices/{number}/approve', headers=OP).status_code == 409
+    assert approval['history'][0]['user_id'] == 'admin1'
+    assert client.post(f'/api/invoices/{number}/approve', headers=ADMIN).status_code == 409
     ok(client.post(f'/api/invoices/{number}/erp/send', headers=OP))
     ok(client.post(f'/api/invoices/{number}/erp/confirm', headers=OP, json={'success': True, 'erp_invoice_no': 'ERP-001'}))
     assert client.post(f'/api/invoices/{number}/erp/send', headers=OP).status_code == 409

@@ -51,6 +51,10 @@ def session_user(settings, token):
             AND s.expires_at>CURRENT_TIMESTAMP''', (token_hash(token),))
 
 
+def is_admin_path(path):
+    return any(path == p or path.startswith(p + '/') for p in ('/users', '/api/users'))
+
+
 class AuthenticationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         settings = request.app.state.settings
@@ -68,8 +72,12 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                 return JSONResponse({'error': '로그인이 필요합니다'}, status_code=401)
             return RedirectResponse('/login?next=' + quote(path, safe=''), status_code=303)
         request.state.auth_user = user
-        if (path == '/users' or path == '/api/users' or path.startswith('/api/users/')) and user['role'] != 'ADMIN':
-            return JSONResponse({'error': '관리자 권한이 필요합니다'}, status_code=403)
+        if is_admin_path(path) and user['role'] != 'ADMIN':
+            if path.startswith('/api/'):
+                return JSONResponse({'error': '관리자 권한이 필요합니다'}, status_code=403)
+            from kkotsuni.app.templating import render
+            return render(request, 'error.html', {'error': '관리자 권한이 필요합니다', 'current_user': user},
+                          status_code=403)
         if path.startswith('/api/') and request.method not in ('GET', 'HEAD', 'OPTIONS'):
             expected = request.session.get('csrf', '')
             if not expected or not hmac.compare_digest(expected, request.headers.get('X-CSRF-Token', '')):
@@ -157,3 +165,38 @@ async def logout(request: Request, db: Annotated[object, Depends(get_db)]):
         await run_in_threadpool(db.x, 'DELETE FROM auth_session WHERE token_hash=%s', (token_hash(token),))
     request.session.clear()
     return RedirectResponse('/login', status_code=303, headers={'Cache-Control': 'no-store'})
+
+
+def account_page(request, user, error=None, status=200):
+    from kkotsuni.app.templating import render
+    return render(request, 'account.html', {'title': '내 비밀번호 변경', 'current_user': user, 'error': error},
+                  status_code=status)
+
+
+@router.get('/account/password')
+def own_password_form(request: Request):
+    if request.app.state.settings.dev_auth:
+        return JSONResponse({'error': '요청 경로를 확인하세요'}, status_code=404)
+    return account_page(request, request.state.auth_user)
+
+
+@router.post('/account/password')
+async def own_password(request: Request, db: Annotated[object, Depends(get_db)]):
+    if request.app.state.settings.dev_auth:
+        return JSONResponse({'error': '요청 경로를 확인하세요'}, status_code=404)
+    from kkotsuni.app.errors import BusinessError
+    from kkotsuni.app.http import saved
+    from kkotsuni.services import accounts
+    data = await request.form()
+    check_csrf(request, data.get('_csrf'))
+    user = request.state.auth_user
+
+    def change():
+        with db.tx():
+            accounts.change_own(db, user['user_id'], data.get('current_password'), data.get('new_password'),
+                                data.get('new_password_confirm'), request.session.get('auth_token'))
+    try:
+        await run_in_threadpool(change)
+    except BusinessError as exc:
+        return account_page(request, user, str(exc), exc.status)
+    return saved(request, '/account/password', '비밀번호를 변경했습니다. 다른 기기의 로그인은 종료되었습니다.')

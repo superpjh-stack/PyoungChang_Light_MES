@@ -5,7 +5,7 @@ from urllib.parse import quote
 from fastapi.templating import Jinja2Templates
 
 from .http import csrf_token
-from .nav import APP_NAME, NAV
+from .nav import APP_NAME, menu
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 LABELS = dict(
@@ -162,9 +162,40 @@ LABELS.update(
         "delivery_site": "납품처",
         "customer_order_no": "거래처 주문번호",
         "updatedLines": "갱신 행 수",
+        "is_default": "기본 납품처",
+        "price_source": "단가 출처",
+        "erp_error_message": "ERP 오류 내용",
+        "tax_review_required": "과세구분 확인 필요",
+        "registered_at": "등록일시",
+        "approved_at": "승인일시",
+        "results": "출고 실적",
+        "totalActualQty": "총 실출고수량",
+        "delivery_site_name": "납품처명",
+        "column": "항목",
+        "password": "비밀번호",
+        "password_set": "비밀번호 등록",
+        "enabled": "사용 여부",
+        "erp_sent_at": "ERP 전송일시",
+        "issued_at": "발행일시",
+        "validCount": "정상 행 수",
+        "errorCount": "오류 행 수",
+        "rowNumber": "행 번호",
+        "values": "주문 내역",
+        "groupKey": "묶음 기준",
+        "diffQty": "차이수량",
+        "orderNos": "주문번호 목록",
+        "normalized_key": "정규화 키",
+        "matchType": "매핑방식",
+        "totalRows": "전체 행 수",
     }
 )
+YES_NO_KEYS = {"approval_required", "is_default", "tax_review_required", "split_by_delivery_site", "password_set", "enabled"}
+VALUE_LABELS = {
+    "price_source": {"ORDER": "주문 단가", "CUSTOMER_PRICE": "거래처 단가", "DEFAULT": "기본단가"},
+}
 templates.env.globals.update(
+    yes_no_keys=YES_NO_KEYS,
+    value_labels=VALUE_LABELS,
     label=lambda key: LABELS.get(str(key), str(key)),
     link_for=lambda key, value: (
         (
@@ -187,13 +218,22 @@ templates.env.globals.update(
 
 def render(request, template="page.html", context=None, status_code=200):
     context = dict(context or {})
+    dev_auth = getattr(request.app.state.settings, "dev_auth", False)
+    if "current_user" not in context:
+        # Error pages raised outside a page context still show the signed-in account (production session).
+        context["current_user"] = getattr(getattr(request, "state", None), "auth_user", None)
+    query = request.url.query
+    # Forms return to the screen the user is on, never to the POST endpoint that re-rendered it.
+    context.setdefault("return_url", request.url.path + ("?" + query if query else ""))
+    groups, active = menu(context["current_user"], context.get("current_path") or request.url.path, dev_auth)
     context.update(
         request=request,
-        nav=NAV,
+        nav=groups,
+        active_href=active,
         app_name=APP_NAME,
         csrf=csrf_token(request),
         flash=request.session.pop("flash", None),
-        dev_auth=getattr(request.app.state.settings, "dev_auth", False),
+        dev_auth=dev_auth,
     )
     return templates.TemplateResponse(request=request, name=template, context=context, status_code=status_code)
 

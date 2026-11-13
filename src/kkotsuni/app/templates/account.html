@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% block content %}
+<section class="card"><h2>비밀번호 변경</h2><p class="muted">새 비밀번호는 8자 이상으로 입력하세요. 변경하면 다른 기기에서 로그인한 세션은 모두 종료됩니다.</p>
+<form method="post" action="/account/password"><input type="hidden" name="_csrf" value="{{ csrf }}"><div class="form-grid">
+<label class="form-field"><span>현재 비밀번호 <b aria-hidden="true">*</b></span><input type="password" name="current_password" autocomplete="current-password" required maxlength="256"></label>
+<label class="form-field"><span>새 비밀번호 <b aria-hidden="true">*</b></span><input type="password" name="new_password" autocomplete="new-password" required minlength="8" maxlength="256"></label>
+<label class="form-field"><span>새 비밀번호 확인 <b aria-hidden="true">*</b></span><input type="password" name="new_password_confirm" autocomplete="new-password" required minlength="8" maxlength="256"></label>
+</div><button type="submit">비밀번호 변경</button></form></section>
+{% endblock %}
