@@ -50,3 +50,7 @@ uv run pytest tests/test_api.py tests/test_workflow.py tests/test_legacy_cases.p
 `tests/test_access_and_accounts.py` 6건: 오류 화면 재저장 시 원래 화면 복귀, 관리자 계정 생성·비밀번호 재설정·역할 변경·사용 중지와 세션 폐기·본인 보호, 본인 비밀번호 변경(현재 세션 유지·다른 세션 폐기), VIEWER 쓰기 403·사용자 쓰기 ADMIN, 역할별 메뉴·HTML 403·현재 메뉴 1개 활성, 예/아니오·영문 열 이름 표시. 기존 승인 테스트 3곳은 승인 ADMIN 정책(MIG-17)에 맞게 OPERATOR 403 → ADMIN 성공으로 바꿨다. `make gate`: ruff 통과, 계약 69건, 테스트 133건 통과(로컬 전용 테스트 DB `kkotsuni_test`의 임시 스키마).
 
 2026-11-02 MIG-20: `test_master_data_writes_are_admin_only` 추가 — 거래처·납품처·거래처 단가·제품 등록/수정 6개 API가 OPERATOR 403·ADMIN 성공, 조회와 별칭 등록은 OPERATOR 허용. `make gate`: ruff 통과, 계약 69건, 테스트 135건 통과.
+
+2026-11-13 MIG-21: `test_invoice_pdf_template_supplier_settings_and_download` 추가 — 공급자 정보 기본값·ADMIN 전용 저장·200자 제한, 템플릿에 문서번호·거래처·품목·한글 합계금액·초안 표시가 들어가고 발행 후 초안 표시가 사라지는지, `/api`와 `/downloads` 양쪽에서 `application/pdf`가 내려오는지, 없는 명세서 404, 상세 화면 링크. `make gate`: ruff 통과, 계약 72건, 테스트 136건 통과.
+
+2026-11-13 MIG-22: `test_notes_menu_keeps_dated_records_and_viewer_is_read_only` 추가 — 기록 등록·최신순 조회·작성자 기록, 빈 제목 400, VIEWER 쓰기 403, 메뉴 맨 아래 Note 링크와 화면 표시. `make gate`: ruff 통과, 계약 74건, 테스트 137건 통과.

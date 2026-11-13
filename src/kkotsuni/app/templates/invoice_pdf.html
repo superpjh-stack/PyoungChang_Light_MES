@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>거래명세서 {{ d.invoice_no }}</title>
+<style>
+@page {
+  size: A4; margin: 14mm 13mm 16mm;
+  @bottom-left { font-family: 'NanumGothic','Nanum Gothic','Noto Sans CJK KR','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif; content: "{{ supplier.supplier_name }} · 거래명세서 {{ d.invoice_no }}"; font-size: 7.5pt; color: #888; }
+  @bottom-right { font-family: 'NanumGothic','Nanum Gothic','Noto Sans CJK KR','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif; content: counter(page) " / " counter(pages); font-size: 7.5pt; color: #888; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'NanumGothic','Nanum Gothic','Noto Sans CJK KR','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 9pt; color: #111; line-height: 1.35; }
+.head { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: 2.2pt solid #db2e2e; padding-bottom: 7pt; }
+.head h1 { margin: 0; font-size: 24pt; font-weight: 800; letter-spacing: 9pt; }
+.head h1 small { display: block; margin-top: 3pt; font-size: 8pt; font-weight: 400; letter-spacing: 0; color: #666; }
+.meta { border-collapse: collapse; font-size: 8.5pt; }
+.meta th { text-align: left; font-weight: 400; color: #666; padding: 1.5pt 8pt 1.5pt 0; }
+.meta td { font-weight: 700; padding: 1.5pt 0; text-align: right; }
+.draft { margin: 8pt 0 0; padding: 5pt 8pt; border: 0.8pt solid #db2e2e; color: #c92424; font-weight: 700; text-align: center; font-size: 9pt; }
+.parties { display: flex; gap: 8pt; margin-top: 11pt; }
+.party { border-collapse: collapse; width: calc(50% - 4pt); table-layout: fixed; }
+.party th, .party td { border: 0.6pt solid #555; padding: 4pt 5pt; font-size: 8.5pt; height: 19pt; vertical-align: middle; overflow-wrap: anywhere; }
+.party .side { width: 17pt; background: #f3f7ec; font-weight: 700; text-align: center; line-height: 1.5; padding: 2pt; }
+.party th { width: 58pt; background: #fafafa; font-weight: 400; color: #444; text-align: center; }
+.party td.name { font-weight: 700; font-size: 10pt; }
+.total { display: flex; align-items: center; justify-content: space-between; margin-top: 9pt; border: 0.9pt solid #111; padding: 8pt 11pt; background: #f3f7ec; }
+.total span { font-size: 8.5pt; color: #444; }
+.total strong { font-size: 13pt; letter-spacing: 0.3pt; }
+.total em { font-style: normal; font-size: 10.5pt; font-weight: 700; margin-left: 8pt; }
+.lines { width: 100%; border-collapse: collapse; margin-top: 9pt; table-layout: fixed; }
+.lines th, .lines td { border: 0.6pt solid #555; padding: 4pt 4pt; font-size: 8.5pt; height: 19pt; vertical-align: middle; overflow-wrap: anywhere; }
+.lines thead { display: table-header-group; }
+.lines thead th { background: #f3f7ec; font-weight: 700; text-align: center; }
+.lines tr { break-inside: avoid; }
+.lines .num { text-align: right; white-space: nowrap; }
+.lines .mid { text-align: center; }
+.lines .ref { text-align: center; font-size: 7.5pt; white-space: nowrap; }
+.lines tfoot th { background: #fafafa; font-weight: 700; text-align: center; }
+.lines tfoot td { font-weight: 700; }
+.sums { width: 100%; border-collapse: collapse; margin-top: -0.6pt; table-layout: fixed; break-inside: avoid; }
+.sums th, .sums td { border: 0.6pt solid #555; padding: 5pt 6pt; font-size: 9pt; height: 22pt; }
+.sums th { background: #f3f7ec; font-weight: 700; text-align: center; width: 13%; }
+.sums td { text-align: right; font-weight: 700; width: 20.33%; }
+.sums td.grand { color: #c92424; font-size: 10.5pt; }
+.foot { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 16pt; break-inside: avoid; }
+.foot p { margin: 0; font-size: 8pt; color: #555; }
+.sign { border-collapse: collapse; }
+.sign th, .sign td { border: 0.6pt solid #555; height: 30pt; font-size: 8.5pt; }
+.sign th { width: 44pt; background: #fafafa; font-weight: 400; text-align: center; }
+.sign td { width: 110pt; text-align: right; padding-right: 8pt; color: #888; }
+</style>
+</head>
+<body>
+<div class="head">
+  <h1>거래명세서<small>공급받는자 보관용</small></h1>
+  <table class="meta"><tbody>
+    <tr><th>문서번호</th><td>{{ d.invoice_no }}</td></tr>
+    <tr><th>거래일자</th><td>{{ d.invoice_date }}</td></tr>
+  </tbody></table>
+</div>
+{% if d.status == 'DRAFT' %}<p class="draft">발행 전 초안 — 금액이 바뀔 수 있습니다</p>{% endif %}
+<div class="parties">
+  <table class="party"><tbody>
+    <tr><td class="side" rowspan="4">공<br>급<br>받<br>는<br>자</td><th>상호</th><td class="name">{{ d.customer_name }} 귀하</td></tr>
+    <tr><th>등록번호</th><td>{{ d.customer_biz_reg_no or '' }}</td></tr>
+    <tr><th>담당자</th><td>{{ d.customer_contact_name or '' }}</td></tr>
+    <tr><th>연락처</th><td>{{ d.customer_contact_phone or '' }}</td></tr>
+  </tbody></table>
+  <table class="party"><tbody>
+    <tr><td class="side" rowspan="4">공<br>급<br>자</td><th>등록번호</th><td>{{ supplier.supplier_biz_reg_no }}</td></tr>
+    <tr><th>상호 / 대표</th><td class="name">{{ supplier.supplier_name }}{% if supplier.supplier_ceo %} / {{ supplier.supplier_ceo }}{% endif %}</td></tr>
+    <tr><th>주소</th><td>{{ supplier.supplier_address }}</td></tr>
+    <tr><th>업태 / 종목</th><td>{{ supplier.supplier_biz_type }}{% if supplier.supplier_biz_item %} / {{ supplier.supplier_biz_item }}{% endif %}{% if supplier.supplier_phone %} · ☎ {{ supplier.supplier_phone }}{% endif %}</td></tr>
+  </tbody></table>
+</div>
+<div class="total">
+  <span>합계금액 (공급가액 + 세액)</span>
+  <div><strong>일금 {{ amount_text }}원정</strong><em>(₩{{ d.total_amount|money }})</em></div>
+</div>
+<table class="lines">
+  <colgroup><col style="width:5%"><col style="width:24%"><col style="width:11%"><col style="width:8%"><col style="width:6%"><col style="width:10%"><col style="width:12%"><col style="width:10%"><col style="width:14%"></colgroup>
+  <thead><tr><th>No</th><th>품목</th><th>규격</th><th>수량</th><th>단위</th><th>단가</th><th>공급가액</th><th>세액</th><th>비고</th></tr></thead>
+  <tbody>
+  {% for line in d.lines %}<tr>
+    <td class="mid">{{ loop.index }}</td>
+    <td>{{ line.product_name }}{% if line.tax_type == 'EXEMPT' %} (면세){% endif %}</td>
+    <td class="mid">{{ line.spec or '' }}</td>
+    <td class="num">{{ line.quantity|money }}</td>
+    <td class="mid">{{ line.unit or '' }}</td>
+    <td class="num">{{ line.unit_price|money }}</td>
+    <td class="num">{{ line.supply_amount|money }}</td>
+    <td class="num">{{ line.tax_amount|money }}</td>
+    <td class="ref">{{ line.order_no or '' }}</td>
+  </tr>{% endfor %}
+  {% for _ in range(blank_rows) %}<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>{% endfor %}
+  </tbody>
+</table>
+<table class="sums"><tbody><tr>
+  <th>공급가액</th><td>{{ d.supply_amount|money }}</td>
+  <th>세액</th><td>{{ d.tax_amount|money }}</td>
+  <th>합계</th><td class="grand">₩{{ d.total_amount|money }}</td>
+</tr></tbody></table>
+<div class="foot">
+  <p>위 금액을 거래명세서로 제출합니다.{% if has_exempt %} (면세) 표시 품목은 부가가치세가 없습니다.{% endif %}<br>비고란은 원 주문번호입니다.</p>
+  <table class="sign"><tbody><tr><th>인수자</th><td>(인)</td></tr></tbody></table>
+</div>
+</body>
+</html>

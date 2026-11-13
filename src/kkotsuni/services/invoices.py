@@ -10,7 +10,12 @@ from kkotsuni.services.common import day, js_round, number
 def get(db, no):
     hdr = repo.require(db, "invoice_hdr", "invoice_no", no, "거래명세서")
     c = repo.require(db, "customer", "customer_code", hdr["customer_code"])
-    hdr.update(customer_name=c["name"], customer_biz_reg_no=c["biz_reg_no"])
+    hdr.update(
+        customer_name=c["name"],
+        customer_biz_reg_no=c["biz_reg_no"],
+        customer_contact_name=c["contact_name"],
+        customer_contact_phone=c["contact_phone"],
+    )
     hdr["lines"] = db.q(
         """SELECT d.*,p.name AS product_name FROM invoice_dtl d JOIN product p ON p.product_code=d.product_code
           WHERE d.invoice_no=%s ORDER BY d.id""",
@@ -219,3 +224,38 @@ def approve(db, no, actor):
         raise BusinessError("이미 승인된 명세서입니다", 409)
     repo.insert(db, "invoice_approval_log", {"invoice_no": no, "user_id": actor})
     return approval(db, no)
+
+
+# Supplier block printed on the statement. Only the trade name has a default; nothing else is assumed.
+SUPPLIER_FIELDS = (
+    "supplier_name",
+    "supplier_biz_reg_no",
+    "supplier_ceo",
+    "supplier_address",
+    "supplier_biz_type",
+    "supplier_biz_item",
+    "supplier_phone",
+)
+
+
+def supplier(db):
+    rows = db.q("SELECT key,value FROM system_setting WHERE key = ANY(%s)", ([k.upper() for k in SUPPLIER_FIELDS],))
+    stored = {r["key"].lower(): r["value"] or "" for r in rows}
+    result = {k: stored.get(k, "") for k in SUPPLIER_FIELDS}
+    result["supplier_name"] = result["supplier_name"] or "평창꽃순이김치"
+    return result
+
+
+def set_supplier(db, data):
+    for field in SUPPLIER_FIELDS:
+        if field not in data:
+            continue
+        value = str(data[field] or "").strip()
+        if len(value) > 200:
+            raise BusinessError(f"{field}은(는) 200자 이하로 입력하세요")
+        db.x(
+            """INSERT INTO system_setting(key,value) VALUES (%s,%s)
+               ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value""",
+            (field.upper(), value),
+        )
+    return supplier(db)

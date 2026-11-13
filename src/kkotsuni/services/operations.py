@@ -9,9 +9,9 @@ import psycopg
 from kkotsuni.app.errors import BusinessError
 from kkotsuni.app.rbac import require_action, require_screen, require_write
 from kkotsuni.db import repositories as repo
-from kkotsuni.integrations import excel
+from kkotsuni.integrations import excel, invoice_pdf
 from kkotsuni.schemas.input import scalar_record
-from kkotsuni.services import accounts, erp, invoices, masters, matching, orders, reporting, shipping
+from kkotsuni.services import accounts, erp, invoices, masters, matching, notes, orders, reporting, shipping
 from kkotsuni.services.common import audit, day, required
 
 
@@ -539,6 +539,35 @@ def invoice_export(db, data, query, user, no):
         ),
         f"{no}.xlsx",
     )
+
+
+@operation("GET", "/invoices/{no}/pdf")
+def invoice_pdf_file(db, data, query, user, no):
+    return Download(
+        invoice_pdf.pdf(invoices.get(db, no), invoices.supplier(db)), f"{no}_거래명세서.pdf", "application/pdf"
+    )
+
+
+@operation("GET", "/notes")
+def note_list(db, data, query, user):
+    return notes.listing(db)
+
+
+@operation("POST", "/notes", 201)
+def note_create(db, data, query, user):
+    return notes.create(db, data, user)
+
+
+@operation("GET", "/settings/supplier")
+def supplier(db, data, query, user):
+    return invoices.supplier(db)
+
+
+@operation("PUT", "/settings/supplier", role="ADMIN")
+def set_supplier(db, data, query, user):
+    result = invoices.set_supplier(db, data)
+    audit(db, "SYSTEM_SETTING", "SUPPLIER", "UPDATE", user, "거래명세서 공급자 정보 변경")
+    return result
 
 
 @operation("GET", "/settings/approval-amount-threshold")

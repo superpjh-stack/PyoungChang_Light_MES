@@ -187,6 +187,15 @@ LABELS.update(
         "normalized_key": "정규화 키",
         "matchType": "매핑방식",
         "totalRows": "전체 행 수",
+        "supplier_name": "공급자 상호",
+        "supplier_biz_reg_no": "공급자 사업자등록번호",
+        "supplier_ceo": "대표자",
+        "supplier_address": "사업장 주소",
+        "supplier_biz_type": "업태",
+        "supplier_biz_item": "종목",
+        "supplier_phone": "전화번호",
+        "customer_contact_name": "거래처 담당자",
+        "customer_contact_phone": "거래처 담당자 연락처",
     }
 )
 YES_NO_KEYS = {"approval_required", "is_default", "tax_review_required", "split_by_delivery_site", "password_set", "enabled"}

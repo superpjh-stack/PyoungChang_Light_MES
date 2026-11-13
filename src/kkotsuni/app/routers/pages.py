@@ -15,6 +15,7 @@ from kkotsuni.app.dependencies import get_db
 from kkotsuni.app.http import check_csrf, local_url, saved
 from kkotsuni.app.rbac import get_user
 from kkotsuni.app.templating import render
+from kkotsuni.services.invoices import SUPPLIER_FIELDS
 from kkotsuni.services.operations import invoke
 
 router = APIRouter()
@@ -203,6 +204,8 @@ def page_context(request, db, path, query=None):
                 add("주문 확정", base + "/confirm")
             else:
                 link("Excel 다운로드", "/downloads" + base + "/export")
+                if kind == "invoices":
+                    link("PDF 다운로드", "/downloads" + base + "/pdf")
                 link("인쇄", base + "/print")
                 ctx["print_mode"] = len(parts) > 2 and parts[2] == "print"
                 if ctx["print_mode"]:
@@ -253,7 +256,18 @@ def page_context(request, db, path, query=None):
             read("/settings/approval-amount-threshold"),
             "PUT",
         )
+        add(
+            "거래명세서 공급자 정보 저장",
+            "/settings/supplier",
+            " ".join(SUPPLIER_FIELDS),
+            read("/settings/supplier"),
+            "PUT",
+        )
         ctx["erp_import"] = True
+    elif path == "/notes":
+        ctx["title"] = "Note"
+        ctx["notes"] = read("/notes")
+        ctx["can_write_note"] = user is None or user.get("role") in ("OPERATOR", "ADMIN")
     elif path == "/audit-log":
         ctx["title"] = "감사 로그"
         ctx["filters"] = ["entity_type", "entity_id", "limit"]

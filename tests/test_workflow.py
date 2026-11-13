@@ -217,3 +217,57 @@ def test_multiple_product_order_finishes_only_after_all_results(client):
         ok(client.post(f"/api/ship-orders/lines/{line['ship_order_dtl_id']}/results", json={'actual_qty': line['instructed_qty']}), 201)
         assert ok(client.get(f'/api/orders/{number}'))['status'] == ('SHIP_ORDERED' if index == 0 else 'SHIPPED')
     assert ok(client.get(f'/api/ship-orders/{shipment}'))['status'] == 'RESULT_REGISTERED'
+
+
+def test_invoice_pdf_template_supplier_settings_and_download(client):
+    from kkotsuni.integrations import invoice_pdf
+
+    setup(client)
+    _, _, number, _ = invoice(client, actual=8)
+    # Supplier block: only the trade name has a default; ADMIN maintains the rest.
+    assert ok(client.get('/api/settings/supplier'))['supplier_name'] == '평창꽃순이김치'
+    body = {'supplier_name': '평창꽃순이(주)', 'supplier_biz_reg_no': '000-00-00000', 'supplier_ceo': '대표자'}
+    assert client.put('/api/settings/supplier', headers=OP, json=body).status_code == 403
+    saved = ok(client.put('/api/settings/supplier', headers=ADMIN, json=body))
+    assert saved['supplier_biz_reg_no'] == '000-00-00000' and saved['supplier_address'] == ''
+    assert client.put('/api/settings/supplier', headers=ADMIN, json={'supplier_name': 'x' * 201}).status_code == 400
+
+    inv = ok(client.get(f'/api/invoices/{number}'))
+    html = invoice_pdf.html(inv, saved)
+    for text in (number, '거래처 귀하', '평창꽃순이(주) / 대표자', '000-00-00000', '배추김치 10kg',
+                 '일금 팔백팔십원정', '₩880', '발행 전 초안'):
+        assert text in html, text
+    assert invoice_pdf.korean_amount(2863000) == '이백팔십육만삼천'
+    assert invoice_pdf.korean_amount(100010000) == '일억일만'
+    assert invoice_pdf.money('1848000.000000') == '1,848,000'
+
+    ok(client.post(f'/api/invoices/{number}/issue', headers=OP))
+    assert '발행 전 초안' not in invoice_pdf.html(ok(client.get(f'/api/invoices/{number}')), saved)
+    try:
+        invoice_pdf._weasyprint()
+    except OSError:
+        pytest.skip('Pango is not installed on this machine; the PDF binary is produced in the Docker image')
+    for url in (f'/api/invoices/{number}/pdf', f'/downloads/invoices/{number}/pdf'):
+        response = client.get(url, headers=OP)
+        assert response.status_code == 200, response.text
+        assert response.headers['content-type'] == 'application/pdf'
+        assert '.pdf' in response.headers['content-disposition']
+        assert response.content.startswith(b'%PDF-') and len(response.content) > 5000
+    assert client.get('/api/invoices/NOPE/pdf', headers=OP).status_code == 404
+    page = client.get(f'/invoices/{number}', headers=OP).text
+    assert f'/downloads/invoices/{number}/pdf' in page
+
+
+def test_notes_menu_keeps_dated_records_and_viewer_is_read_only(client):
+    setup(client)
+    assert ok(client.get('/api/notes')) == []
+    assert client.post('/api/notes', headers={'X-User-Id': 'viewer1'}, json={'title': 't', 'body': 'b'}).status_code == 403
+    assert client.post('/api/notes', headers=OP, json={'title': ' ', 'body': 'b'}).status_code == 400
+    first = ok(client.post('/api/notes', headers=OP, json={'title': '제품 매핑 기록', 'body': '첫 줄\r\n둘째 줄'}), 201)
+    assert first['created_by'] == 'op1' and first['body'] == '첫 줄\n둘째 줄'
+    ok(client.post('/api/notes', headers=ADMIN, json={'title': '두 번째', 'body': '내용'}), 201)
+    assert [n['title'] for n in ok(client.get('/api/notes'))] == ['두 번째', '제품 매핑 기록']
+    page = client.get('/notes', headers=OP).text
+    assert 'href="/notes"' in page and '제품 매핑 기록' in page and '기록 저장' in page
+    assert page.index('href="/audit-log"') < page.index('href="/notes"') if 'href="/audit-log"' in page else True
+    assert '기록 저장' not in client.get('/notes', headers={'X-User-Id': 'viewer1'}).text

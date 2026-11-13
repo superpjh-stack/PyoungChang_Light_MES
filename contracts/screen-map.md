@@ -16,6 +16,7 @@
 | /invoices/preview | 저장 전 계산·제외 사유 | R1-F-08 |
 | /invoices/{invoiceNo} | 정합성·승인·발행·ERP·추적 | R1-F-08/09/10/12 |
 | /invoices/{invoiceNo}/print | 거래명세서 A4 인쇄 | R1-F-08 |
+| /downloads/invoices/{invoiceNo}/pdf | 거래명세서 PDF 다운로드(상세·인쇄 화면의 [PDF 다운로드]) | R1-F-08 |
 | /customers | 거래처 목록·등록·ERP 미매핑 | R1-F-04 |
 | /customers/{customerCode} | 거래처 수정·납품처·단가 | R1-F-04 |
 | /products | 제품 목록·등록 | R1-F-04 |
@@ -25,8 +26,9 @@
 | /users | 사용자 등록(비밀번호 포함)·목록, ADMIN | R1-N-06 |
 | /users/{userId} | 이름·역할 변경, 비밀번호 재설정, 사용 여부, ADMIN | R1-N-06 |
 | /account/password | 본인 비밀번호 변경(운영 로그인 모드) | R1-N-06 |
-| /settings | 승인 임계값·ERP 마스터 CSV | R1-F-12/R1-I-01 |
+| /settings | 승인 임계값·거래명세서 공급자 정보·ERP 마스터 CSV | R1-F-08/R1-F-12/R1-I-01 |
 | /audit-log | 감사 로그 조회 | R1-N-07 |
+| /notes | Note — 작업 기록 조회·추가(메뉴 맨 아래, 쓰기는 OPERATOR 이상) | 사용자 요청(2026-11-13) |
 
 HTML 쓰기는 `/actions`에서 CSRF 검사 후 공통 업무 서비스를 호출한다. 성공 303, 입력 실패는 입력값을 유지하는 오류 화면으로 응답한다. 스타터킷의 D-27 원 계약은 없으므로 오류 시 303+팝업과 완전히 동일하다고 주장하지 않는다. 공통 flash와 tabs.js를 사용한다.
 

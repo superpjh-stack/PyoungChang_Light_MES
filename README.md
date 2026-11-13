@@ -32,9 +32,13 @@ uv run python tools/create_user.py --username admin --name 관리자 --role ADMI
 # Docker: docker compose run --rm app python tools/create_user.py --username admin --name 관리자 --role ADMIN
 ```
 
-API 쓰기 요청에는 로그인 세션 쿠키와 화면의 `_csrf` 값을 `X-CSRF-Token` 헤더로 함께 전달해야 합니다. `/login`, 정적 파일, `/api/health`만 로그인 없이 접근할 수 있습니다. 외부 운영은 HTTPS 프록시와 `KKOTSUNI_SECURE_COOKIE=true`를 사용하세요. 기존 HTTP 배포에는 아직 HTTPS가 설정되지 않았습니다.
+API 쓰기 요청에는 로그인 세션 쿠키와 화면의 `_csrf` 값을 `X-CSRF-Token` 헤더로 함께 전달해야 합니다. `/login`, 정적 파일, `/api/health`만 로그인 없이 접근할 수 있습니다. 외부 운영은 HTTPS 프록시와 `KKOTSUNI_SECURE_COOKIE=true`를 사용하세요. 운영 배포(8514 포트)는 2026-11-13부터 nginx 게이트웨이가 HTTPS로 받아 앱에 전달하며, 같은 포트의 HTTP 요청은 HTTPS로 넘깁니다. 게이트웨이 구성은 서버의 릴리스 폴더에만 있고 저장소에는 없습니다.
 
 개발용 `KKOTSUNI_DEV_AUTH=true`는 격리된 로컬 테스트에만 사용합니다. 이 모드는 로그인 접근 제한을 우회하며 기존 헤더 기반 테스트 호환성을 유지합니다.
+
+거래명세서는 상세·인쇄 화면의 [PDF 다운로드]로 A4 PDF를 받을 수 있습니다. 공급자란(등록번호·대표·주소 등)은 ADMIN이 설정 화면의 "거래명세서 공급자 정보"에 입력한 값이 찍힙니다. PDF 변환에는 Pango가 필요합니다. Docker 이미지에는 포함돼 있고, macOS 개발 환경은 `brew install pango`와 한글 글꼴(나눔고딕 등)이 있어야 합니다.
+
+메뉴 맨 아래 Note는 작업 기록을 남기는 화면입니다(예: 제품 매핑을 일괄 확정한 내역과 보류 사유). OPERATOR 이상이 쓸 수 있고 수정·삭제는 없습니다.
 
 ## Docker 실행
 

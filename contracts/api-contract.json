@@ -414,6 +414,36 @@
       "path": "/users/{code}/status",
       "role": "ADMIN",
       "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/invoices/{no}/pdf",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/settings/supplier",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "PUT",
+      "path": "/settings/supplier",
+      "role": "ADMIN",
+      "success_status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/notes",
+      "role": null,
+      "success_status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/notes",
+      "role": null,
+      "success_status": 201
     }
   ]
 }
