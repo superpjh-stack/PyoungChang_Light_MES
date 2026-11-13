@@ -46,3 +46,25 @@ def test_dashboard_avoids_line_duplication_excludes_cancelled_and_separates_draf
     data=client.get('/api/dashboard/overview?date=2026-10-31').json()
     assert data['flow']['invoiced']==1 and data['invoices']['issued_amount']==2000
     assert client.get('/').status_code==200
+
+
+def test_dashboard_shows_mapping_backlog_recent_notes_and_setup_gaps(client, db):
+    insert(db, 'customer', {'customer_code': 'C', 'name': '테스트 거래처'})
+    insert(db, 'product', {'product_code': 'P', 'name': '김치', 'tax_review_required': True})
+    insert(db, 'order_hdr', {'order_no': 'O1', 'customer_code': 'C', 'order_date': '2026-09-01',
+                             'ship_due_date': '2026-09-02', 'status': 'RECEIVED'})
+    for line, name in ((1, '모르는 김치'), (2, '모르는 김치'), (3, '다른 표기')):
+        insert(db, 'order_dtl', {'order_no': 'O1', 'line_no': line, 'raw_product_name': name, 'quantity': 1})
+    insert(db, 'work_note', {'title': '매핑 기록', 'body': '내용', 'created_by': 'admin1'})
+    data = client.get('/api/dashboard/overview?date=2026-10-31&days=7').json()
+    assert data['mapping']['lines'] == 3 and data['mapping']['names'] == 2
+    assert data['mapping']['top'][0] == {'customer_name': '테스트 거래처', 'raw_product_name': '모르는 김치', 'lines': 2}
+    assert data['notes'][0]['title'] == '매핑 기록'
+    assert data['setup']['tax_review'] == 1 and data['setup']['supplier_missing'] is True
+    assert data['setup']['all_orders'] == 1 and data['orders']['count'] == 0
+    page = client.get('/?date=2026-10-31&days=7').text
+    for text in ('제품 매핑 대기', '모르는 김치', '최근 Note', '매핑 기록', '과세구분 확인',
+                 '전체 수주 1건 중 조회 기간에 0건', '최근 90일로 보기', '공급자 등록번호가 비어 있습니다'):
+        assert text in page, text
+    db.x("INSERT INTO system_setting(key,value) VALUES ('SUPPLIER_BIZ_REG_NO','000-00-00000')")
+    assert client.get('/api/dashboard/overview').json()['setup']['supplier_missing'] is False

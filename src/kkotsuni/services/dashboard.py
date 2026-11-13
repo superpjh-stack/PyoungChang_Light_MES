@@ -93,7 +93,22 @@ def overview(db, query):
       count(*) FILTER (WHERE status='검토 필요') AS review,
       count(DISTINCT NULLIF(payload->>'tracking_no','')) AS parcels,
       count(DISTINCT order_no) AS orders FROM source_record''')
-    return {'source':source,'start':start,'end':end,'days':days,'orders':{**orders,**amounts},'shipments':shipments,
+    source['reasons'] = db.q("""SELECT split_part(issue,';',1) AS reason,count(*) AS count FROM source_record
+      WHERE status='검토 필요' AND COALESCE(issue,'')<>'' GROUP BY 1 ORDER BY count DESC,reason LIMIT 4""")
+    mapping = db.one("""SELECT count(*) AS lines,count(DISTINCT (o.customer_code,d.raw_product_name)) AS names
+      FROM order_dtl d JOIN order_hdr o USING(order_no) WHERE d.product_code IS NULL AND o.status<>'CANCELLED'""")
+    mapping['top'] = db.q("""SELECT c.name AS customer_name,d.raw_product_name,count(*) AS lines
+      FROM order_dtl d JOIN order_hdr o USING(order_no) JOIN customer c USING(customer_code)
+      WHERE d.product_code IS NULL AND o.status<>'CANCELLED'
+      GROUP BY c.name,d.raw_product_name ORDER BY lines DESC,d.raw_product_name LIMIT 5""")
+    notes = db.q("""SELECT id,title,created_by,created_at AT TIME ZONE 'Asia/Seoul' AS created_at
+      FROM work_note ORDER BY id DESC LIMIT 3""")
+    setup = db.one("""SELECT (SELECT count(*) FROM product WHERE tax_review_required) AS tax_review,
+      (SELECT count(*) FROM order_hdr WHERE status<>'CANCELLED') AS all_orders,
+      (SELECT max(order_date) FROM order_hdr WHERE status<>'CANCELLED') AS latest_order_date,
+      NOT EXISTS (SELECT 1 FROM system_setting WHERE key='SUPPLIER_BIZ_REG_NO' AND COALESCE(value,'')<>'')
+        AS supplier_missing""")
+    return {'mapping':mapping,'notes':notes,'setup':setup,'source':source,'start':start,'end':end,'days':days,'orders':{**orders,**amounts},'shipments':shipments,
             'invoices':invoices,'flow':flow,'daily':daily,'series':series,'chart_max':max_value,
             'statuses':statuses,'top_customers':top,'pending':pending,'attention':attention,
             'erp':[{'label':label,'count':erp.get(code,0)} for code,label in
