@@ -85,19 +85,27 @@ def map_unique_names(db):
         ]
         if len(hits) != 1:
             continue
-        try:
-            with db.tx():
-                result = matching.resolve(
-                    db,
-                    {
-                        "customer_code": item["customer_code"],
-                        "raw_name": item["raw_product_name"],
-                        "product_code": hits[0]["product_code"],
-                    },
-                )
-        except BusinessError:
+        code = hits[0]["product_code"]
+        alias = db.one(
+            "SELECT product_code FROM product_alias WHERE customer_code=%s AND raw_name=%s",
+            (item["customer_code"], item["raw_product_name"]),
+        )
+        if alias and alias["product_code"] != code:
             continue
-        mapped.append((item["raw_product_name"], hits[0]["product_code"], result["updatedLines"]))
+        if alias:
+            # The alias was created while re-applying review rows; older pending lines still need the link.
+            lines = db.x(
+                """UPDATE order_dtl d SET product_code=%s,amount=quantity*unit_price FROM order_hdr o
+                   WHERE o.order_no=d.order_no AND d.product_code IS NULL AND d.raw_product_name=%s
+                   AND o.customer_code=%s""",
+                (code, item["raw_product_name"], item["customer_code"]),
+            )
+        else:
+            lines = matching.resolve(
+                db,
+                {"customer_code": item["customer_code"], "raw_name": item["raw_product_name"], "product_code": code},
+            )["updatedLines"]
+        mapped.append((item["raw_product_name"], code, lines))
     return mapped
 
 
