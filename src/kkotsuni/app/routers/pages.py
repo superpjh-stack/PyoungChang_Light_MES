@@ -214,6 +214,7 @@ def page_context(request, db, path, query=None):
                 if kind == "ship-orders":
                     link("원본 양식 출고요청서", base + "/request-form")
                     link("출고요청서 Excel", base + "/request-form.xlsx")
+                    link("출고요청서 PDF", base + "/request-form.pdf")
                     section("출고 실적과 수량 차이", read(base + "/results"))
                     for line in data.get("lines", []):
                         line_id = line.get("id", line.get("ship_order_dtl_id"))

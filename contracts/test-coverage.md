@@ -54,3 +54,5 @@ uv run pytest tests/test_api.py tests/test_workflow.py tests/test_legacy_cases.p
 2026-11-13 MIG-21: `test_invoice_pdf_template_supplier_settings_and_download` 추가 — 공급자 정보 기본값·ADMIN 전용 저장·200자 제한, 템플릿에 문서번호·거래처·품목·한글 합계금액·초안 표시가 들어가고 발행 후 초안 표시가 사라지는지, `/api`와 `/downloads` 양쪽에서 `application/pdf`가 내려오는지, 없는 명세서 404, 상세 화면 링크. `make gate`: ruff 통과, 계약 72건, 테스트 136건 통과.
 
 2026-11-13 MIG-22: `test_notes_menu_keeps_dated_records_and_viewer_is_read_only` 추가 — 기록 등록·최신순 조회·작성자 기록, 빈 제목 400, VIEWER 쓰기 403, 메뉴 맨 아래 Note 링크와 화면 표시. `make gate`: ruff 통과, 계약 74건, 테스트 137건 통과.
+
+2026-11-13 MIG-23: `test_shipping_request_pdf_uses_company_layout_and_paginates` 추가 — 양식 항목·작성자·작성일자 표시, 21행 단위 쪽 나눔, 미로그인 401, VIEWER 다운로드, 없는 출고지시 404, 상세·양식 화면의 PDF 링크. `make gate`: ruff 통과, 계약 74건, 테스트 138건 통과.

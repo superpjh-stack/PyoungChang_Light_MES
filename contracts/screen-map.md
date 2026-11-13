@@ -16,6 +16,7 @@
 | /invoices/preview | 저장 전 계산·제외 사유 | R1-F-08 |
 | /invoices/{invoiceNo} | 정합성·승인·발행·ERP·추적 | R1-F-08/09/10/12 |
 | /invoices/{invoiceNo}/print | 거래명세서 A4 인쇄 | R1-F-08 |
+| /ship-orders/{shipOrderNo}/request-form.pdf | 출고요청서(택배취합) 원본 양식 PDF 다운로드 | R1-F-06 |
 | /downloads/invoices/{invoiceNo}/pdf | 거래명세서 PDF 다운로드(상세·인쇄 화면의 [PDF 다운로드]) | R1-F-08 |
 | /customers | 거래처 목록·등록·ERP 미매핑 | R1-F-04 |
 | /customers/{customerCode} | 거래처 수정·납품처·단가 | R1-F-04 |

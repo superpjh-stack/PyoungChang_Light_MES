@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>출고요청서 {{ d.ship_order_no }}</title>
+<style>
+@page {
+  size: A4 landscape; margin: 11mm 13mm 12mm;
+  @bottom-left { font-family: 'NanumGothic','Nanum Gothic','Noto Sans CJK KR','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif; content: "출고요청서 {{ d.ship_order_no }}"; font-size: 7.5pt; color: #888; }
+  @bottom-right { font-family: 'NanumGothic','Nanum Gothic','Noto Sans CJK KR','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif; content: counter(page) " / " counter(pages); font-size: 7.5pt; color: #888; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'NanumGothic','Nanum Gothic','Noto Sans CJK KR','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 9pt; color: #111; }
+.sheet { break-after: page; }
+.sheet:last-child { break-after: auto; }
+h1 { margin: 0 0 6pt; text-align: center; font-size: 19pt; font-weight: 800; letter-spacing: 3pt; padding-bottom: 5pt; border-bottom: 2.2pt solid #4c8a4c; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+th, td { border: 0.6pt solid #555; padding: 2pt 5pt; vertical-align: middle; overflow-wrap: anywhere; }
+.info th { width: 12%; background: #f3f7ec; font-weight: 700; text-align: center; height: 19pt; }
+.info td { width: 38%; font-size: 9.5pt; }
+.info td.name { font-weight: 700; }
+.lines { margin-top: 6pt; }
+.lines th { background: #f3f7ec; font-weight: 700; text-align: center; height: 16pt; font-size: 8.5pt; }
+.lines td { height: 17.6pt; font-size: 9pt; }
+.lines .mid { text-align: center; }
+.lines .num { text-align: right; white-space: nowrap; }
+.foot { display: flex; justify-content: space-between; margin-top: 5pt; font-size: 8pt; color: #444; }
+.foot strong { color: #111; }
+</style>
+</head>
+<body>
+{% for page in pages %}
+<section class="sheet">
+  <h1>출고 요청서 (택배취합)</h1>
+  <table class="info"><tbody>
+    <tr><th>출고일자</th><td>{{ d.ship_date }}</td><th>출고자</th><td></td></tr>
+    <tr><th>작성일자</th><td>{{ written_on }}</td><th>작성자</th><td>{{ author }}</td></tr>
+    <tr><th>거래처명</th><td class="name">{{ d.customer_name }}</td><th>구분</th><td>{{ d.ship_method or '' }}</td></tr>
+  </tbody></table>
+  <table class="lines">
+    <colgroup><col style="width:6%"><col style="width:31%"><col style="width:12%"><col style="width:10%"><col style="width:10%"><col style="width:18%"><col style="width:13%"></colgroup>
+    <thead><tr><th>NO.</th><th>품명 (원산지표기)</th><th>규격</th><th>수량(ea)</th><th>합계 kg</th><th>비고</th><th>제조일자</th></tr></thead>
+    <tbody>
+    {% for number, line in page %}<tr>
+      <td class="mid">{{ number }}</td>
+      {% if line %}<td>{{ line.product_name }}</td><td class="mid">{{ line.product_spec or '' }}</td><td class="num">{{ line.instructed_qty|money }}</td><td></td><td>{{ line.note or '' }}</td><td></td>
+      {% else %}<td></td><td></td><td></td><td></td><td></td><td></td>{% endif %}
+    </tr>{% endfor %}
+    </tbody>
+  </table>
+  <div class="foot"><span><strong>평창올푸드㈜ by 평창꽃순이</strong> · 제조일자·원산지·중량은 확인 후 기재</span><span>출고지시번호 {{ d.ship_order_no }}</span></div>
+</section>
+{% endfor %}
+</body>
+</html>

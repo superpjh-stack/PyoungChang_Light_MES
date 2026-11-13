@@ -80,3 +80,26 @@ def request_workbook(document, author):
     out = BytesIO()
     book.save(out)
     return out.getvalue()
+
+
+ROWS_PER_PAGE = 21
+
+
+def request_html(document, author, written_on=""):
+    """Same company layout as the workbook: 21 numbered rows per landscape page, blanks left for the floor."""
+    from kkotsuni.integrations.invoice_pdf import env
+
+    lines = document["lines"]
+    pages = [
+        [(start + i + 1, lines[start + i] if start + i < len(lines) else None) for i in range(ROWS_PER_PAGE)]
+        for start in range(0, max(len(lines), 1), ROWS_PER_PAGE)
+    ]
+    return env.get_template("shipping_request_pdf.html").render(
+        d=document, author=author, written_on=written_on, pages=pages
+    )
+
+
+def request_pdf(document, author, written_on=""):
+    from kkotsuni.integrations.invoice_pdf import to_pdf
+
+    return to_pdf(request_html(document, author, written_on))

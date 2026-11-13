@@ -271,3 +271,31 @@ def test_notes_menu_keeps_dated_records_and_viewer_is_read_only(client):
     assert 'href="/notes"' in page and '제품 매핑 기록' in page and '기록 저장' in page
     assert page.index('href="/audit-log"') < page.index('href="/notes"') if 'href="/audit-log"' in page else True
     assert '기록 저장' not in client.get('/notes', headers={'X-User-Id': 'viewer1'}).text
+
+
+def test_shipping_request_pdf_uses_company_layout_and_paginates(client):
+    from kkotsuni.integrations import invoice_pdf, shipping_forms
+
+    setup(client)
+    _, shipment, _ = ship(client)
+    document = ok(client.get(f'/api/ship-orders/{shipment}'))
+    html = shipping_forms.request_html(document, '작성자', '2026-11-13')
+    for text in ('출고 요청서 (택배취합)', '거래처', '배추김치 10kg', '작성자', '2026-11-13', '품명 (원산지표기)', shipment):
+        assert text in html, text
+    assert html.count('<section class="sheet">') == 1 and html.count('<td class="mid">21</td>') == 1
+    many = dict(document, lines=document['lines'] * 22)
+    paged = shipping_forms.request_html(many, '작성자')
+    assert paged.count('<section class="sheet">') == 2 and '<td class="mid">42</td>' in paged
+
+    assert client.get(f'/ship-orders/{shipment}/request-form.pdf').status_code == 401
+    try:
+        invoice_pdf._weasyprint()
+    except OSError:
+        pytest.skip('Pango is not installed on this machine; the PDF binary is produced in the Docker image')
+    response = client.get(f'/ship-orders/{shipment}/request-form.pdf', headers={'X-User-Id': 'viewer1'})
+    assert response.status_code == 200, response.text
+    assert response.headers['content-type'] == 'application/pdf'
+    assert response.content.startswith(b'%PDF-') and len(response.content) > 5000
+    assert client.get('/ship-orders/NOPE/request-form.pdf', headers=OP).status_code == 404
+    assert f'/ship-orders/{shipment}/request-form.pdf' in client.get(f'/ship-orders/{shipment}', headers=OP).text
+    assert 'request-form.pdf' in client.get(f'/ship-orders/{shipment}/request-form', headers=OP).text

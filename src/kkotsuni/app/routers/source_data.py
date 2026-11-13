@@ -207,6 +207,22 @@ def request_form(no: str, request: Request, db: DB):
     )
 
 
+@router.get("/ship-orders/{no}/request-form.pdf")
+def request_pdf(no: str, request: Request, db: DB):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from kkotsuni.integrations.shipping_forms import request_pdf as build
+
+    user = account(request, db, "VIEWER")
+    written_on = datetime.now(ZoneInfo("Asia/Seoul")).date().isoformat()
+    return Response(
+        build(shipping.get(db, no), user["name"], written_on),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(no + '-출고요청서.pdf')}"},
+    )
+
+
 @router.get("/ship-orders/{no}/request-form.xlsx")
 def request_excel(no: str, request: Request, db: DB):
     from kkotsuni.integrations.shipping_forms import request_workbook

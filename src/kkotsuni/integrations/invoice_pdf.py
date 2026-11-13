@@ -67,10 +67,14 @@ def _weasyprint():
     return HTML
 
 
-def pdf(invoice, supplier):
+def to_pdf(markup):
     try:
         # Imported on use: the native Pango libraries are a deployment dependency of this feature only.
         HTML = _weasyprint()
     except (ImportError, OSError) as exc:
         raise BusinessError("PDF 변환 구성요소(Pango)가 설치되지 않아 PDF를 만들 수 없습니다", 503) from exc
-    return HTML(string=html(invoice, supplier), base_url=str(TEMPLATES)).write_pdf()
+    return HTML(string=markup, base_url=str(TEMPLATES)).write_pdf()
+
+
+def pdf(invoice, supplier):
+    return to_pdf(html(invoice, supplier))
