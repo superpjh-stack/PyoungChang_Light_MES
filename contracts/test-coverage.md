@@ -60,3 +60,5 @@ uv run pytest tests/test_api.py tests/test_workflow.py tests/test_legacy_cases.p
 2026-11-13 대시보드: `test_dashboard_shows_mapping_backlog_recent_notes_and_setup_gaps` 추가 — 매핑 대기 표기명·줄 수와 상위 목록, 최근 Note, 과세구분 확인 제품 수, 공급자 등록번호 미입력 안내, 조회 기간 밖 수주 안내. `make gate`: ruff 통과, 계약 74건, 테스트 139건 통과.
 
 2026-11-13 MIG-24: `test_one_missing_date_is_filled_and_parcel_logs_are_evidence_only` 추가 — 주문일/출고예정일 한쪽 보완과 비고 표시, 둘 다 없으면 검토 유지, 송장 이력 파일은 수주를 만들지 않고 송장번호 일치 시 연결·불일치 시 범위 제외. `make gate`: ruff 통과, 계약 74건, 테스트 140건 통과. `tools/curate_real_data.py`는 로컬 DB에서 dry-run과 실제 적용 결과가 같은 것을 확인했다.
+
+2026-11-14 MIG-25: `test_dashboard_default_window_falls_back_to_latest_order_period` 추가 — 기준일 미지정·기본 기간 수주 0건일 때 최근 수주일로 기준일 이동과 안내 문구, 취소 수주 제외, 출고 지연은 오늘 기준 유지, 기준일 지정 시와 기간 내 수주가 있을 때는 이동 없음. `make gate`: ruff 통과, 계약 74건, 테스트 141건 통과.

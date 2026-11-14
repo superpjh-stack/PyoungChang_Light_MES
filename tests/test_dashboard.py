@@ -68,3 +68,25 @@ def test_dashboard_shows_mapping_backlog_recent_notes_and_setup_gaps(client, db)
         assert text in page, text
     db.x("INSERT INTO system_setting(key,value) VALUES ('SUPPLIER_BIZ_REG_NO','000-00-00000')")
     assert client.get('/api/dashboard/overview').json()['setup']['supplier_missing'] is False
+
+
+def test_dashboard_default_window_falls_back_to_latest_order_period(client, db):
+    insert(db, 'customer', {'customer_code': 'C', 'name': '테스트 거래처'})
+    assert client.get('/api/dashboard/overview').json()['auto_adjusted'] is False
+    for no, date, status in (('OLD', '2020-03-10', 'CONFIRMED'), ('GONE', '2020-05-01', 'CANCELLED')):
+        insert(db, 'order_hdr', {'order_no': no, 'customer_code': 'C', 'order_date': date,
+                                 'ship_due_date': '2020-05-02', 'status': status})
+    data = client.get('/api/dashboard/overview').json()
+    assert data['auto_adjusted'] is True and data['end'] == '2020-03-10' and data['start'] == '2020-02-10'
+    assert data['orders']['count'] == 1 and data['daily'][-1]['orders'] == 1
+    # Overdue stays relative to today, not to the moved window.
+    assert data['pending']['overdue'] == 1 and data['attention'][0]['task'] == '출고 지연'
+    page = client.get('/').text
+    assert '가장 최근 수주일 2020-03-10 기준으로 표시합니다' in page and '오늘 기준으로 보기' in page
+    explicit = client.get(f"/api/dashboard/overview?date={data['today']}").json()
+    assert explicit['auto_adjusted'] is False and explicit['orders']['count'] == 0
+    assert '오늘 기준으로 보기' not in client.get(f"/?date={data['today']}").text
+    insert(db, 'order_hdr', {'order_no': 'NOW', 'customer_code': 'C', 'order_date': data['today'],
+                             'ship_due_date': data['today'], 'status': 'RECEIVED'})
+    recent = client.get('/api/dashboard/overview').json()
+    assert recent['auto_adjusted'] is False and recent['end'] == data['today']

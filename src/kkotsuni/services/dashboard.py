@@ -7,13 +7,25 @@ from kkotsuni.services.common import day
 
 
 def overview(db, query):
-    end = day(query['date']) if query.get('date') else datetime.now(ZoneInfo('Asia/Seoul')).date()
+    today = datetime.now(ZoneInfo('Asia/Seoul')).date()
+    end = day(query['date']) if query.get('date') else today
     try:
         days = int(query.get('days', 30))
         if days not in (7, 14, 30, 90):
             raise ValueError
     except (ValueError, TypeError):
         raise BusinessError('조회 기간은 7일, 14일, 30일, 90일 중 선택하세요')
+    # Overdue and attention lists stay relative to the requested day even when the window moves back.
+    as_of = end
+    auto_adjusted = False
+    if not query.get('date'):
+        # No explicit day and nothing in the default window: show the latest period that has orders.
+        latest = db.one('''SELECT max(order_date) AS day,
+            count(*) FILTER (WHERE order_date BETWEEN %s AND %s) AS in_window
+            FROM order_hdr WHERE status<>'CANCELLED' AND order_date<=%s''',
+            (end - timedelta(days=days-1), end, end))
+        if latest['day'] and not latest['in_window']:
+            end, auto_adjusted = day(latest['day']), True
     start = end - timedelta(days=days-1)
     params = (start, end)
     orders = db.one('''SELECT COUNT(*) AS count,
@@ -76,7 +88,7 @@ def overview(db, query):
         COUNT(*) FILTER (WHERE status='SHIPPED') AS invoice,
         COUNT(*) FILTER (WHERE status='RECEIVED' AND EXISTS
          (SELECT 1 FROM order_dtl d WHERE d.order_no=o.order_no AND product_code IS NULL)) AS mapping
-        FROM order_hdr o''',(end,))
+        FROM order_hdr o''',(as_of,))
     erp = {r['erp_send_status']:r['count'] for r in db.q('''SELECT erp_send_status,count(*) AS count FROM invoice_hdr
         WHERE status='ISSUED' GROUP BY erp_send_status''')}
     pending['erp_failed'] = erp.get('FAILED',0)
@@ -88,7 +100,7 @@ def overview(db, query):
           (o.status='RECEIVED' AND EXISTS (SELECT 1 FROM order_dtl d
            WHERE d.order_no=o.order_no AND product_code IS NULL))
         ORDER BY CASE WHEN o.status IN ('CONFIRMED','SHIP_ORDERED') AND o.ship_due_date<%s THEN 0 ELSE 1 END,
-        o.ship_due_date,o.order_no LIMIT 8''',(end,end))
+        o.ship_due_date,o.order_no LIMIT 8''',(as_of,as_of))
     source = db.one('''SELECT count(DISTINCT file_id) AS files,
       count(*) FILTER (WHERE status='검토 필요') AS review,
       count(DISTINCT NULLIF(payload->>'tracking_no','')) AS parcels,
@@ -108,7 +120,7 @@ def overview(db, query):
       (SELECT max(order_date) FROM order_hdr WHERE status<>'CANCELLED') AS latest_order_date,
       NOT EXISTS (SELECT 1 FROM system_setting WHERE key='SUPPLIER_BIZ_REG_NO' AND COALESCE(value,'')<>'')
         AS supplier_missing""")
-    return {'mapping':mapping,'notes':notes,'setup':setup,'source':source,'start':start,'end':end,'days':days,'orders':{**orders,**amounts},'shipments':shipments,
+    return {'mapping':mapping,'notes':notes,'setup':setup,'source':source,'start':start,'end':end,'days':days,'today':today,'auto_adjusted':auto_adjusted,'orders':{**orders,**amounts},'shipments':shipments,
             'invoices':invoices,'flow':flow,'daily':daily,'series':series,'chart_max':max_value,
             'statuses':statuses,'top_customers':top,'pending':pending,'attention':attention,
             'erp':[{'label':label,'count':erp.get(code,0)} for code,label in
